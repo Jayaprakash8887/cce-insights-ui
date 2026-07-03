@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, '.', '');
 
   // The app is served under a base path (e.g. /insights) by the ingress. Emitting built assets
   // under that same prefix (/insights/assets/...) means the single /insights ingress rule covers
