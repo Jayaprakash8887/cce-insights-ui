@@ -4,7 +4,7 @@ import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorAlert } from '../shared/ErrorAlert';
 import { TableRangePagination } from '../shared/TableRangePagination';
 import { useAdoptionKpis } from '../../hooks/useFacilities';
-import { formatNumber } from '../../utils/formatters';
+import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
 
 const TABLE_PAGE_SIZE = 10;
@@ -79,8 +79,8 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                               <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(rate, 100)}%` }} />
                             </div>
-                            <span className={`w-10 shrink-0 text-xs font-semibold ${rateColor}`}>
-                              {rate}%
+                            <span className={`w-12 shrink-0 text-xs font-semibold ${rateColor}`}>
+                              {formatPercentage(rate, 2)}
                             </span>
                           </div>
                         </td>
