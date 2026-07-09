@@ -137,7 +137,7 @@ export default function ComplianceOverview() {
         {data && (
           <>
             <p className="mb-3 text-xs text-gray-400">
-              Compliance metrics reflect the end of the selected date range (snapshot), not a sum across days.
+              Compliance metrics cover patients enrolled during the selected date range, not a sum across days.
             </p>
             <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <MetricCard title="Tracked Patients" value={formatNumber(data.totalEnrollments)} description="Total number of patients enrolled and being tracked under this protocol." />
@@ -157,7 +157,7 @@ export default function ComplianceOverview() {
                   const overdue = data.stepMetrics.overdue ?? 0;
                   const missed = data.stepMetrics.missed ?? 0;
                   const pending = data.stepMetrics.pending ?? 0;
-                  const totalSteps = data.stepMetrics.totalSteps || 1;
+                  const totalSteps = data.stepMetrics.totalSteps ?? 0;
 
                   const tiles = [
                     { key: 'total', label: 'Total Steps', value: totalSteps, denom: totalSteps, color: 'bg-gray-500', text: 'text-gray-800', bg: 'bg-gray-50', desc: 'Total applicable steps across all tracked patients.' },
@@ -169,7 +169,7 @@ export default function ComplianceOverview() {
                   ];
 
                   return tiles.map(({ key, label, value, denom, color, text, bg, sub, desc }) => {
-                    const pct = Math.round((value / denom) * 100);
+                    const pct = Math.round((value / (denom || 1)) * 100);
                     return (
                       <div key={key} className={`rounded-lg ${bg} p-3 relative group`}>
                         <p className={`text-2xl font-bold ${text}`}>
