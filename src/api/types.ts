@@ -255,7 +255,8 @@ export interface DeviationRecord {
   stepInstanceId: string;
   actionId: string;
   deviationType: DeviationType;
-  detectedAt: string;
+  occurredAt: string;   // clinical occurrence date (when the deviation happened)
+  detectedAt: string;   // system detection date (when we flagged it)
   facilityId: string;
 }
 
@@ -325,6 +326,7 @@ export interface EventVolumeSummary {
   byResourceType: { resourceType: string; count: number }[];
   byFacility: { facilityId: string; count: number }[];
   bySource: { source: string; count: number }[];
+  pipelineLossCount: number;
 }
 
 export interface EventVolumeTrend {

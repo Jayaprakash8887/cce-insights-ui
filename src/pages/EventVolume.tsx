@@ -8,7 +8,7 @@ import { TableRangePagination } from '../components/shared/TableRangePagination'
 import { EventTrendChart } from '../components/charts/EventTrendChart';
 import { ResourceTypeBarChart } from '../components/charts/ResourceTypeBarChart';
 import {
-  useEventKpis, useEventTrends, useEventsByResourceType, useEventsByFacility, useEventSummary,
+  useEventTrends, useEventsByResourceType, useEventsByFacility, useEventSummary,
 } from '../hooks/useEventVolume';
 import { useFacilityLookup } from '../hooks/useLookups';
 import { formatNumber } from '../utils/formatters';
@@ -26,15 +26,13 @@ export default function EventVolume() {
   const [facilityPage, setFacilityPage] = useState(1);
 
   const summary = useEventSummary();
-  const kpis = useEventKpis();
   const trends = useEventTrends(interval);
   const byResourceType = useEventsByResourceType();
   const byFacility = useEventsByFacility();
   const facilities = useFacilityLookup();
 
-  // Header tiles use /events/summary (respects global date filter) for the metrics
-  // that vary with the period. Pipeline Loss has no date-aware equivalent and stays
-  // sourced from /events/kpis (cumulative MV) — disclosed in the disclaimer below.
+  // All header tiles (incl. Pipeline Loss) come from /events/summary — every metric is
+  // date-filtered by clinical event_time over the same event set, so the rates reconcile.
   const periodTotalEvents = summary.data?.totalEvents ?? 0;
   const matchedCount = summary.data?.processingStatusBreakdown?.matched?.count ?? 0;
   const zeroMatchCount = summary.data?.processingStatusBreakdown?.zeroMatch?.count ?? 0;
@@ -75,7 +73,9 @@ export default function EventVolume() {
   const facilityRowsWithName = useMemo(
     () => facilityRows.map((r) => ({
       ...r,
-      facilityName: facilityNameById.get(r.facilityId) ?? r.facilityId,
+      // Facility-less events (RelatedPerson/Patient/etc. with no facility in the source) bucket here
+      // so the table reconciles with Total Events.
+      facilityName: r.facilityId === '' ? 'Unassigned' : (facilityNameById.get(r.facilityId) ?? r.facilityId),
     })),
     [facilityRows, facilityNameById],
   );
@@ -111,8 +111,7 @@ export default function EventVolume() {
       {summary.isLoading ? <LoadingSpinner /> : summary.error ? <ErrorAlert error={summary.error} /> : (
         <>
           <div className="mb-1 text-xs text-gray-400">
-            Metrics scoped to the selected date range. Pipeline Loss is a cumulative
-            pipeline-health indicator (not date-filtered).
+            All metrics are scoped to the selected date range by clinical event time.
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <MetricCard
@@ -140,9 +139,9 @@ export default function EventVolume() {
             />
             <MetricCard
               title="Pipeline Loss"
-              value={formatNumber(kpis.data?.pipelineLossCount ?? 0)}
-              description="Cumulative events accepted by the collector but never reaching the compliance engine — pipeline-health indicator (not date-filtered)."
-              bgColor={(kpis.data?.pipelineLossCount ?? 0) > 0 ? 'bg-red-50' : undefined}
+              value={formatNumber(summary.data?.pipelineLossCount ?? 0)}
+              description={`Events accepted by the collector but never reaching the compliance engine in the selected period (${formatNumber(summary.data?.pipelineLossCount ?? 0)} of ${formatNumber(periodTotalEvents)}).`}
+              bgColor={(summary.data?.pipelineLossCount ?? 0) > 0 ? 'bg-red-50' : undefined}
             />
           </div>
         </>

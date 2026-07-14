@@ -1232,6 +1232,16 @@ export function getDashboardComplianceSummary(params?: {
 }): Promise<DashboardComplianceSummary> {
   return apiGet('/dashboard/compliance-summary', params);
 }
+
+// Referrals KPI — Total Referrals top card + per-facility Referrals column
+// (Dashboard e-Buzima Adoption table; Facility Ranking table). Filtered by clinical event_time.
+// response: { totalReferralsReceived: number,
+//             byFacility: [{ facilityId: string, facilityName: string, count: number }] }
+export function getReferralsKpi(params?: {
+  facilityId?: string; startDate?: string; endDate?: string;
+}): Promise<ReferralsKpi> {
+  return apiGet('/dashboard/referrals', params);
+}
 ```
 
 ### 3.12 Practitioners
@@ -1481,7 +1491,7 @@ These hook files exist and follow the same pattern (each reads `useGlobalFilters
 
 | File | Hooks | Query keys |
 |------|-------|-----------|
-| `useDashboard.ts` | `useDashboardOverview`, `useDashboardComplianceSummary` | `['dashboard','overview', filters]`, `['dashboard','compliance-summary', filters]` (poll) |
+| `useDashboard.ts` | `useDashboardOverview`, `useDashboardComplianceSummary`, `useReferralsKpi` | `['dashboard','overview', filters]`, `['dashboard','compliance-summary', filters]`, `['dashboard','referrals', filters]` (all poll) |
 | `useFacilities.ts` | `useFacilityActivitySummary`, `useFacilityReference`, `useAdoptionKpis`, `useFacilityRanking` | `['facilities','activity-summary', filters]` (poll), `['facilities','reference']` (1h staleTime), `['facilities','adoption', filters]`, `['facilities','ranking', rankBy, order, limit, filters]` |
 | `useIntelligence.ts` | `useIntelligenceSummary(protocolDefinitionId?)` — delivery-pipeline (`../api/intelligence`); **distinct** from the deviations one in §4.2 | `['intelligence','summary', { ...filters, protocolDefinitionId }]` |
 | `usePractitioners.ts` | `usePractitionerRanking(params)` | `['practitioners','ranking', { ...params, ...filters }]` |

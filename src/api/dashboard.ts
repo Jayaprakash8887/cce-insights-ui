@@ -55,3 +55,27 @@ export function getDashboardComplianceSummary(params?: {
 }): Promise<DashboardComplianceSummary> {
   return apiGet('/dashboard/compliance-summary', params);
 }
+
+/**
+ * Referrals KPI — per-facility count of referral forms successfully received by
+ * HIE plus the total, filtered by inbound event {@code event_time}. Backed by
+ * {@code GET /v1/insights/dashboard/referrals}.
+ */
+export interface FacilityReferralCount {
+  facilityId: string;
+  facilityName: string;
+  count: number;
+}
+
+export interface ReferralsKpi {
+  totalReferralsReceived: number;
+  byFacility: FacilityReferralCount[];
+}
+
+export function getReferralsKpi(params?: {
+  facilityId?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<ReferralsKpi> {
+  return apiGet('/dashboard/referrals', params);
+}

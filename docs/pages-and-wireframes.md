@@ -37,6 +37,7 @@
 | Endpoint | Purpose |
 |----------|---------|  
 | `GET /v1/insights/dashboard/compliance-summary` | Patient compliance cards (tracked / compliant / non-compliant / rate) |
+| `GET /v1/insights/dashboard/referrals` | Total Referrals top metric card + per-facility Referrals column on the e-Buzima Adoption table |
 | `GET /v1/insights/facilities/activity-summary` | Facility activity cards (total / active / inactive) |
 | `GET /v1/insights/facilities/adoption` | e-Buzima adoption metrics |
 | `GET /v1/insights/deviations/trends` | Deviation trend chart |
@@ -56,13 +57,17 @@
 │ │Facilities│  │   248      │ │ Journeys   │ │ Journeys   │ │   72%      │   │
 │ │Compliance│  │            │ │    180     │ │    68      │ │            │   │
 │ │Deviations│  └────────────┘ └────────────┘ └────────────┘ └────────────┘   │
-│ │ Patients │  Facility Activity                                             │
+│ │ Patients │  ┌────────────┐                                                 │
+│ │          │  │ Total      │  (Total Referrals — forms received by HIE)      │
+│ │          │  │ Referrals  │                                                 │
+│ │          │  └────────────┘                                                 │
+│ │          │  Facility Activity                                             │
 │ │ Events   │  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
 │ │ Ingestion│  │ Total      │ │ Active     │ │ Inactive   │                  │
 │ │          │  │ Facilities │ │ Facilities │ │ Facilities │                  │
 │ │          │  └────────────┘ └────────────┘ └────────────┘                  │
 │ │          │  ┌─ e-Buzima Adoption ─────────────────────────────────────┐   │
-│ │          │  │ (adoption metrics table)                                │   │
+│ │          │  │ (adoption metrics table — Facility | … | Referrals)     │   │
 │ │          │  └─────────────────────────────────────────────────────────┘   │
 │ │          │  ┌─ Deviation Trends ──────────┐ ┌─ Event Volume ──────────┐   │
 │ │          │  │   ╱╲    ╱╲                  │ │   ▄▄▆▆██▇▇▆▆▄▄██▆▆    │   │
@@ -79,8 +84,11 @@
 | Compliant Care Journeys | `patients.compliantPatients` | No active deviations |
 | Non-Compliant Care Journeys | `patients.nonCompliantPatients` | Has active deviations |
 | Compliance Rate | `patients.complianceRate` | Compliant ÷ tracked (%) |
+| Total Referrals | `dashboard/referrals → totalReferralsReceived` | Referral forms successfully received by HIE in the selected period (by clinical `event_time`). Sits in the top metrics row, after Compliance Rate. |
 | Total / Active / Inactive Facilities | `facilities/activity-summary` | Facility activity in the period |
-| e-Buzima Adoption | `facilities/adoption` (`EbuzimaAdoptionCard`) | Source-system adoption metrics |
+| e-Buzima Adoption | `facilities/adoption` (`EbuzimaAdoptionCard`) | Source-system adoption metrics; the table now includes a **Referrals** column (per-facility count from `dashboard/referrals → byFacility[].count`, keyed by `facilityId`). |
+
+> There is no separate standalone "Referrals" card — the metric surfaces as the **Total Referrals** top card plus the per-facility **Referrals** column on the e-Buzima Adoption table.
 
 ---
 
@@ -476,15 +484,18 @@ facility search). Color-coded compliance column with legend.
 │         │  Order: [Best First •] [Worst First]   Search: [facility…____]    │
 │         │                                                                    │
 │         │  ┌─ Facility Ranking Table ──────────────────────────────────────┐ │
-│         │  │ Rank │ Facility │ Tracked Pts │ Compliance │ Deviations│Events │ │
-│         │  │  1   │ 0015     │ 89          │ 🟢 82%     │ 5         │ 2800  │ │
-│         │  │  2   │ 0002     │ 156         │ 🟡 74%     │ 12        │ 3200  │ │
-│         │  │  3   │ 0008     │ 62          │ 🔴 58%     │ 22        │ 2100  │ │
+│         │  │ Rank │ Facility │ Referrals │ Tracked Pts │ Compliance │ Dev│Ev│ │
+│         │  │  1   │ 0015     │ 34        │ 89          │ 🟢 82%     │ 5 │..│ │
+│         │  │  2   │ 0002     │ 51        │ 156         │ 🟡 74%     │ 12│..│ │
+│         │  │  3   │ 0008     │ 12        │ 62          │ 🔴 58%     │ 22│..│ │
 │         │  │  Legend: 🟢 ≥80%  🟡 50-79%  🔴 <50%   (Events = period)     │ │
 │         │  └───────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
+> The Facility Ranking table now includes a **Referrals** column (per-facility referral count,
+> shown next to the facility).
+>
 > The **Non-Compliant Hotspots** section was removed from this page.
 
 ---
