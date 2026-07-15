@@ -6,17 +6,16 @@ import { ErrorAlert } from '../components/shared/ErrorAlert';
 import { DeviationTrendChart } from '../components/charts/DeviationTrendChart';
 import { EventTrendChart } from '../components/charts/EventTrendChart';
 import { EbuzimaAdoptionCard } from '../components/facilities/EbuzimaAdoptionCard';
+import { FacilityActivityCards } from '../components/facilities/FacilityActivityCards';
 import { useEventTrends } from '../hooks/useEventVolume';
 import { useDeviationTrends } from '../hooks/useDeviations';
 import { useDashboardComplianceSummary, useReferralsKpi } from '../hooks/useDashboard';
-import { useFacilityActivitySummary } from '../hooks/useFacilities';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
 export default function Dashboard() {
   const deviationTrends = useDeviationTrends('daily');
   const eventTrends = useEventTrends('daily');
   const complianceSummary = useDashboardComplianceSummary();
-  const facilityActivity = useFacilityActivitySummary();
   const referrals = useReferralsKpi();
 
   if (complianceSummary.isLoading) return <LoadingSpinner />;
@@ -63,27 +62,9 @@ export default function Dashboard() {
       </div>
       </div>
 
-      {/* Facility Activity Metrics */}
+      {/* Facility Activity Metrics — Active/Inactive drill down to a facility list (RI-29) */}
       <div className="mt-4 rounded-xl border border-gray-200 p-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard
-          title="Total Facilities"
-          description="All in-scope healthcare facilities in the facility reference list."
-          value={facilityActivity.isLoading ? '…' : formatNumber(facilityActivity.data?.totalInScope ?? 0)}
-        />
-        <MetricCard
-          title="Active Facilities"
-          description="Facilities that transmitted at least one HIE event within the selected period."
-          value={facilityActivity.isLoading ? '…' : formatNumber(facilityActivity.data?.activeFacilities ?? 0)}
-          bgColor="bg-green-50"
-        />
-        <MetricCard
-          title="Inactive Facilities"
-          description="In-scope facilities with no HIE events transmitted within the selected period."
-          value={facilityActivity.isLoading ? '…' : formatNumber(facilityActivity.data?.inactiveFacilities ?? 0)}
-          bgColor="bg-red-50"
-        />
-      </div>
+        <FacilityActivityCards />
       </div>
 
       <EbuzimaAdoptionCard className="mt-6" />
