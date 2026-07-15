@@ -341,6 +341,13 @@ sequenceDiagram
     Pages->>Pages: Re-render with fresh data
 ```
 
+> **Metric time semantics** — two clocks, chosen by metric type:
+>
+> - **Functional metrics** — clinical/business KPIs (adoption, compliance, deviations, event volume, referrals, patient cohorts). Measured on **clinical `event_time`**: when the clinical act actually happened. The global date filter scopes these by `event_time`.
+> - **Technical / operational metrics** — the Ingestion page (pipeline health / throughput). Measured on **processing / system time** (`received_at`).
+>
+> Rule of thumb: every page filters by clinical `event_time` EXCEPT the Ingestion page, which is the sole system-time (technical) view.
+
 ### 5.3 Polling for Dashboard Updates
 
 ```typescript
@@ -368,6 +375,7 @@ useQuery({
 // Hierarchical keys incorporating global filters for automatic invalidation
 ['dashboard', 'overview', filters]
 ['dashboard', 'compliance-summary', filters]
+['dashboard', 'referrals', filters]
 ['compliance', 'summary', protocolId || 'all', effectiveFilters]
 ['compliance', 'patients', protocolId, { status, patientId, limit, cursor, dateFilterMode }, filters]
 ['patients', patientId, 'timeline', { startDate, endDate }]

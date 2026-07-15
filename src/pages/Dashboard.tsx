@@ -8,7 +8,7 @@ import { EventTrendChart } from '../components/charts/EventTrendChart';
 import { EbuzimaAdoptionCard } from '../components/facilities/EbuzimaAdoptionCard';
 import { useEventTrends } from '../hooks/useEventVolume';
 import { useDeviationTrends } from '../hooks/useDeviations';
-import { useDashboardComplianceSummary } from '../hooks/useDashboard';
+import { useDashboardComplianceSummary, useReferralsKpi } from '../hooks/useDashboard';
 import { useFacilityActivitySummary } from '../hooks/useFacilities';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const eventTrends = useEventTrends('daily');
   const complianceSummary = useDashboardComplianceSummary();
   const facilityActivity = useFacilityActivitySummary();
+  const referrals = useReferralsKpi();
 
   if (complianceSummary.isLoading) return <LoadingSpinner />;
 
@@ -31,7 +32,7 @@ export default function Dashboard() {
 
       {/* Patient Compliance Metrics */}
       <div className="rounded-xl border border-gray-200 p-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <MetricCard
           title="Tracked Cohort"
           description="Patients enrolled during the selected period."
@@ -53,6 +54,11 @@ export default function Dashboard() {
           title="Compliance Rate"
           description="Compliant patients as a percentage of the tracked cohort in the selected period."
           value={formatPercentage(patients?.complianceRate ?? 0)}
+        />
+        <MetricCard
+          title="Total Referrals"
+          description="Referral forms successfully received by HIE across all in-scope facilities in the selected period (by inbound event event_time)."
+          value={referrals.isLoading ? '…' : formatNumber(referrals.data?.totalReferralsReceived ?? 0)}
         />
       </div>
       </div>

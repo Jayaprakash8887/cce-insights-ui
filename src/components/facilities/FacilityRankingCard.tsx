@@ -4,6 +4,7 @@ import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorAlert } from '../shared/ErrorAlert';
 import { TableRangePagination } from '../shared/TableRangePagination';
 import { useFacilityRanking } from '../../hooks/useFacilities';
+import { useReferralsKpi } from '../../hooks/useDashboard';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { getFacilityName } from '../../utils/facilityNames';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
@@ -23,6 +24,14 @@ export function FacilityRankingCard() {
     order,
     limit: 200,
   });
+  const referrals = useReferralsKpi();
+
+  // Per-facility referral counts (same period/event_time) keyed for O(1) row lookup.
+  const referralByFacility = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of referrals.data?.byFacility ?? []) m.set(r.facilityId, r.count);
+    return m;
+  }, [referrals.data]);
 
   const filteredRows = useMemo(() => {
     if (!ranking.data?.data) return [];
@@ -103,6 +112,7 @@ export function FacilityRankingCard() {
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="pb-2 pr-4">Rank</th>
                     <th className="pb-2 pr-4">Facility</th>
+                    <th className="pb-2 pr-4">Referrals</th>
                     <th className="pb-2 pr-4">Tracked Patients</th>
                     <th className="pb-2 pr-4">Compliance</th>
                     <th className="pb-2 pr-4">Deviations</th>
@@ -116,6 +126,7 @@ export function FacilityRankingCard() {
                       <td className="py-2 pr-4 font-medium text-gray-900">
                         {formatFacilityDisplayName(f, duplicateFacilityNames)}
                       </td>
+                      <td className="py-2 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
                       <td className="py-2 pr-4">{formatNumber(f.totalEnrollments)}</td>
                       <td className="py-2 pr-4">
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
