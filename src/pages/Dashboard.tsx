@@ -34,8 +34,8 @@ export default function Dashboard() {
       <div className="rounded-xl border border-gray-200 p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <MetricCard
-          title="Tracked Cohort"
-          description="Patients enrolled during the selected period."
+          title="Total Patients received in HIE"
+          description="Distinct patients received via the HIE (enrolled) during the selected period."
           value={formatNumber(patients?.trackedPatients ?? 0)}
         />
         <MetricCard
