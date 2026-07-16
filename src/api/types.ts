@@ -495,6 +495,15 @@ export interface FacilityActivitySummary {
   activeFacilityRate: number;
 }
 
+// One facility in the Active/Inactive drill-down list (RI-29).
+export interface FacilityActivityItem {
+  facilityId: string;
+  facilityName: string;
+  district: string;
+  lastActivity: string | null; // yyyy-MM-dd of last accepted event in range; null if inactive
+  active: boolean;
+}
+
 // ─── Facility Reference ──────────────────────────────────────
 
 export interface FacilityReference {

@@ -1,7 +1,7 @@
 import { apiGet, apiGetPaginated } from './client';
 import type {
   FacilityRanking, RankBy, SortOrder,
-  FacilityActivitySummary, FacilityReference, AdoptionKpi,
+  FacilityActivitySummary, FacilityActivityItem, FacilityReference, AdoptionKpi,
 } from './types';
 
 export function getFacilityActivitySummary(params?: {
@@ -18,6 +18,16 @@ export function getFacilityActivitySummary(params?: {
 
 export function getFacilityReference(): Promise<FacilityReference[]> {
   return apiGet('/facilities/reference');
+}
+
+export function getFacilityActivityDetail(params?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<FacilityActivityItem[]> {
+  return apiGet('/facilities/activity-detail', {
+    startDate: params?.startDate ? params.startDate.substring(0, 10) : undefined,
+    endDate:   params?.endDate   ? params.endDate.substring(0, 10)   : undefined,
+  });
 }
 
 // The adoption endpoint accepts plain LocalDate (YYYY-MM-DD), not ISO datetime.
