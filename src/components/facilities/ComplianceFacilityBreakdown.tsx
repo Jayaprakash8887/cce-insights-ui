@@ -29,7 +29,14 @@ export function ComplianceFacilityBreakdown() {
     let r = filterByDistrictFacility(rows, district, facility);
     if (status === 'compliant') r = r.filter((f) => f.nonCompliantPatients === 0);
     else if (status === 'noncompliant') r = r.filter((f) => f.nonCompliantPatients > 0);
-    return r;
+    // Display order: district A→Z, then facility A→Z, then highest compliance rate first.
+    return [...r].sort((a, b) => {
+      const d = (a.district ?? '').localeCompare(b.district ?? '', undefined, { sensitivity: 'base' });
+      if (d !== 0) return d;
+      const f = (a.facilityName ?? '').localeCompare(b.facilityName ?? '', undefined, { sensitivity: 'base' });
+      if (f !== 0) return f;
+      return b.complianceRate - a.complianceRate;
+    });
   }, [rows, district, facility, status]);
 
   useEffect(() => { setPage(1); }, [ranking.data, district, facility, status]);

@@ -19,11 +19,14 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
 
   const adoptionRows = adoption.data ?? [];
 
-  // Country-level roll-up across all facilities (the always-visible summary).
+  // Country-level roll-up (the always-visible summary). Adoption = reporting vs expected baseline,
+  // so aggregate ONLY facilities that have a baseline (expectedVisitsPerDay > 0). Otherwise actual
+  // visits from un-baselined facilities inflate the rate (e.g. 280%) and disagree with the gap.
   const summary = useMemo(() => {
-    const expected = adoptionRows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
-    const actual = adoptionRows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
-    const gap = adoptionRows.reduce((s, f) => s + f.reportingGapPerDay, 0);
+    const baselined = adoptionRows.filter((f) => f.expectedVisitsPerDay > 0);
+    const expected = baselined.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
+    const actual = baselined.reduce((s, f) => s + f.actualVisitsPerDay, 0);
+    const gap = expected - actual;
     const rate = expected > 0 ? Math.round((actual * 1000) / expected) / 10 : 0;
     return { expected, actual, gap, rate };
   }, [adoptionRows]);
