@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
 
 /** Sentinel values for "no filter applied". */
 export const ALL_DISTRICTS = '__all__';
@@ -91,15 +92,16 @@ export function DistrictFacilityFilter<T extends FacilityRow>({
 }) {
   const districts = useMemo(() => districtOptions(options), [options]);
 
-  // Facilities available for the selected district (deduped by id, sorted by name).
+  // Facilities available for the selected district (deduped by id, id appended for duplicate names).
   const facilities = useMemo(() => {
     const inDistrict = district === ALL_DISTRICTS ? options : options.filter((r) => r.district === district);
-    const seen = new Map<string, string>();
-    for (const r of inDistrict) {
-      if (!seen.has(r.facilityId)) seen.set(r.facilityId, r.facilityName || r.facilityId);
-    }
-    return Array.from(seen, ([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    const byId = new Map<string, T>();
+    for (const r of inDistrict) if (!byId.has(r.facilityId)) byId.set(r.facilityId, r);
+    const list = [...byId.values()];
+    const dupes = findDuplicateFacilityNames(list);
+    return list
+      .map((f) => ({ id: f.facilityId, label: formatFacilityDisplayName(f, dupes) }))
+      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
   }, [options, district]);
 
   const selectClass = 'truncate rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700';
@@ -131,7 +133,7 @@ export function DistrictFacilityFilter<T extends FacilityRow>({
       >
         <option value={ALL_FACILITIES}>All facilities</option>
         {facilities.map((f) => (
-          <option key={f.id} value={f.id}>{f.name}</option>
+          <option key={f.id} value={f.id}>{f.label}</option>
         ))}
       </select>
     </div>
