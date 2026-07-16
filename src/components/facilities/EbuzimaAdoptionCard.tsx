@@ -19,20 +19,29 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
 
   const adoptionRows = adoption.data ?? [];
 
-  // Country-level roll-up across all facilities (the always-visible summary).
+  // Country-level roll-up = sum across ALL facilities. Reporting gap is derived from those sums
+  // (expected − actual) and the rate from the same sums (actual ÷ expected), so gap and rate always
+  // agree (a negative gap = over-reporting, matching a rate above 100%).
   const summary = useMemo(() => {
     const expected = adoptionRows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
     const actual = adoptionRows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
-    const gap = adoptionRows.reduce((s, f) => s + f.reportingGapPerDay, 0);
+    const gap = expected - actual;
     const rate = expected > 0 ? Math.round((actual * 1000) / expected) / 10 : 0;
     return { expected, actual, gap, rate };
   }, [adoptionRows]);
 
   // District/facility cascade refines only the facility breakdown table; the summary stays country-level.
-  const filteredRows = useMemo(
-    () => filterByDistrictFacility(adoptionRows, district, facility),
-    [adoptionRows, district, facility],
-  );
+  // Display order: district A→Z, then facility A→Z, then highest adoption rate first.
+  const filteredRows = useMemo(() => {
+    const r = filterByDistrictFacility(adoptionRows, district, facility);
+    return [...r].sort((a, b) => {
+      const d = (a.district ?? '').localeCompare(b.district ?? '', undefined, { sensitivity: 'base' });
+      if (d !== 0) return d;
+      const f = (a.facilityName ?? '').localeCompare(b.facilityName ?? '', undefined, { sensitivity: 'base' });
+      if (f !== 0) return f;
+      return b.adoptionRate - a.adoptionRate;
+    });
+  }, [adoptionRows, district, facility]);
   const paginatedRows = useMemo(
     () => filteredRows.slice((page - 1) * TABLE_PAGE_SIZE, page * TABLE_PAGE_SIZE),
     [filteredRows, page],

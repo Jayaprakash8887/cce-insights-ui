@@ -5,6 +5,7 @@ import { TableRangePagination } from '../shared/TableRangePagination';
 import { DistrictFacilityFilter, filterByDistrictFacility, LabeledSelect, ALL_DISTRICTS, ALL_FACILITIES } from '../shared/DistrictSelect';
 import { useFacilityRanking } from '../../hooks/useFacilities';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
+import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
 
 const PAGE_SIZE = 10;
 
@@ -25,11 +26,20 @@ export function ComplianceFacilityBreakdown() {
     () => (ranking.data?.data ?? []).filter((f) => f.totalEnrollments > 0),
     [ranking.data],
   );
+  // Append the facility id when two facilities share a display name (e.g. same name, different FOSA id).
+  const duplicateNames = useMemo(() => findDuplicateFacilityNames(ranking.data?.data ?? []), [ranking.data]);
   const filtered = useMemo(() => {
     let r = filterByDistrictFacility(rows, district, facility);
     if (status === 'compliant') r = r.filter((f) => f.nonCompliantPatients === 0);
     else if (status === 'noncompliant') r = r.filter((f) => f.nonCompliantPatients > 0);
-    return r;
+    // Display order: district A→Z, then facility A→Z, then highest compliance rate first.
+    return [...r].sort((a, b) => {
+      const d = (a.district ?? '').localeCompare(b.district ?? '', undefined, { sensitivity: 'base' });
+      if (d !== 0) return d;
+      const f = (a.facilityName ?? '').localeCompare(b.facilityName ?? '', undefined, { sensitivity: 'base' });
+      if (f !== 0) return f;
+      return b.complianceRate - a.complianceRate;
+    });
   }, [rows, district, facility, status]);
 
   useEffect(() => { setPage(1); }, [ranking.data, district, facility, status]);
@@ -99,7 +109,7 @@ export function ComplianceFacilityBreakdown() {
                 {paginated.map((f) => (
                   <tr key={f.facilityId} className="hover:bg-gray-50">
                     <td className="truncate py-2 pr-4 font-medium text-gray-900">{f.district || '—'}</td>
-                    <td className="truncate py-2 pr-4 font-medium text-gray-900" title={f.facilityName || f.facilityId}>{f.facilityName || f.facilityId}</td>
+                    <td className="truncate py-2 pr-4 font-medium text-gray-900" title={formatFacilityDisplayName(f, duplicateNames)}>{formatFacilityDisplayName(f, duplicateNames)}</td>
                     <td className="py-2 pr-4 text-center tabular-nums text-gray-700">{formatNumber(f.totalEnrollments)}</td>
                     <td className="py-2 pr-4 text-center tabular-nums text-green-700">{formatNumber(f.compliantPatients)}</td>
                     <td className="py-2 pr-4 text-center tabular-nums text-red-700">{formatNumber(f.nonCompliantPatients)}</td>
