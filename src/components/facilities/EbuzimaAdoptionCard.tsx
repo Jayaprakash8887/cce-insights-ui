@@ -32,10 +32,17 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
   }, [adoptionRows]);
 
   // District/facility cascade refines only the facility breakdown table; the summary stays country-level.
-  const filteredRows = useMemo(
-    () => filterByDistrictFacility(adoptionRows, district, facility),
-    [adoptionRows, district, facility],
-  );
+  // Display order: district A→Z, then facility A→Z, then highest adoption rate first.
+  const filteredRows = useMemo(() => {
+    const r = filterByDistrictFacility(adoptionRows, district, facility);
+    return [...r].sort((a, b) => {
+      const d = (a.district ?? '').localeCompare(b.district ?? '', undefined, { sensitivity: 'base' });
+      if (d !== 0) return d;
+      const f = (a.facilityName ?? '').localeCompare(b.facilityName ?? '', undefined, { sensitivity: 'base' });
+      if (f !== 0) return f;
+      return b.adoptionRate - a.adoptionRate;
+    });
+  }, [adoptionRows, district, facility]);
   const paginatedRows = useMemo(
     () => filteredRows.slice((page - 1) * TABLE_PAGE_SIZE, page * TABLE_PAGE_SIZE),
     [filteredRows, page],

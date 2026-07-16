@@ -36,7 +36,14 @@ export function ReferralMetricsCard({ className }: { className?: string }) {
     let r = filterByDistrictFacility(rows, district, facility);
     if (status === 'compliant') r = r.filter((f) => f.nonCompliant === 0);
     else if (status === 'noncompliant') r = r.filter((f) => f.nonCompliant > 0);
-    return r;
+    // Display order: district A→Z, then facility A→Z, then most referrals received first.
+    return [...r].sort((a, b) => {
+      const d = (a.district ?? '').localeCompare(b.district ?? '', undefined, { sensitivity: 'base' });
+      if (d !== 0) return d;
+      const f = (a.facilityName ?? '').localeCompare(b.facilityName ?? '', undefined, { sensitivity: 'base' });
+      if (f !== 0) return f;
+      return b.count - a.count;
+    });
   }, [rows, district, facility, status]);
 
   useEffect(() => { setPage(1); }, [data, open, status, district, facility]);
