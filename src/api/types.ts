@@ -423,7 +423,11 @@ export interface FacilityRanking {
   rank: number;
   facilityId: string;
   facilityName?: string;
+  /** Facility's district (may be empty). */
+  district?: string;
   totalEnrollments: number;
+  compliantPatients: number;
+  nonCompliantPatients: number;
   complianceRate: number;
   activeDeviations: number;
   totalEvents: number;
@@ -517,6 +521,8 @@ export interface FacilityReference {
 export interface AdoptionKpi {
   facilityId: string;
   facilityName: string;
+  /** Facility's district (may be empty). */
+  district: string;
   expectedVisitsPerDay: number;
   actualVisitsPerDay: number;
   adoptionRate: number;

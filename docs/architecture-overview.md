@@ -214,11 +214,12 @@ App.tsx (Sidebar + Header + Routes; providers live in main.tsx)
 ├── Header (global DateRangeFilter + Sign-out button when authEnabled)
 ├── <Routes> (inline; pages are React.lazy + Suspense)
 │
-├── / → DashboardPage
-│   ├── MetricCard × 4 — Patient compliance (Tracked Cohort, Compliant Care Journeys,
-│   │                    Non-Compliant Care Journeys, Compliance Rate)
-│   ├── MetricCard × 3 — Facility activity (Total / Active / Inactive Facilities)
-│   ├── EbuzimaAdoptionCard (e-Buzima adoption metrics)
+├── / → DashboardPage    (RI-35: country-level cards, each an inline click-to-expand drill-down)
+│   ├── ClickableMetricGroup "Service Compliance" — 4 MetricCards + ComplianceFacilityBreakdown detail
+│   ├── ReferralMetricsCard — 4 MetricCards (received/compliant/non-compliant/rate) + per-facility detail
+│   ├── FacilityActivityCards — Total/Active/Inactive + per-facility active/inactive detail
+│   ├── EbuzimaAdoptionCard — country adoption summary + per-facility detail
+│   │     (drill-downs share DistrictFacilityFilter + LabeledSelect status filter, in shared/DistrictSelect)
 │   ├── DeviationTrendChart (area)
 │   └── EventVolumeTrendChart (stacked area — by resource type)
 │

@@ -30,65 +30,59 @@
 ## 1. Dashboard
 
 **Route:** `/`  
-**Purpose:** Landing page — high-level operational metrics, trend snapshots. Default 90-day date range.
+**Purpose:** Landing page — **country-level** operational metrics grouped into four indicator cards, each with an inline per-facility **drill-down** (RI-35), plus trend snapshots. Default 90-day date range.
 
 ### APIs Used
 
 | Endpoint | Purpose |
 |----------|---------|  
-| `GET /v1/insights/dashboard/compliance-summary` | Patient compliance cards (tracked / compliant / non-compliant / rate) |
-| `GET /v1/insights/dashboard/referrals` | Total Referrals top metric card + per-facility Referrals column on the e-Buzima Adoption table |
-| `GET /v1/insights/facilities/activity-summary` | Facility activity cards (total / active / inactive) |
-| `GET /v1/insights/facilities/adoption` | e-Buzima adoption metrics |
+| `GET /v1/insights/dashboard/compliance-summary` | Service Compliance cards (tracked / compliant / non-compliant / rate) |
+| `GET /v1/insights/facilities/ranking` | Service Compliance drill-down — per-facility compliant / non-compliant / rate (`ComplianceFacilityBreakdown`) |
+| `GET /v1/insights/dashboard/referrals` | Referrals cards (received / compliant / non-compliant / rate) + per-facility drill-down |
+| `GET /v1/insights/facilities/activity-summary` | Facility Status cards (total / active / inactive) |
+| `GET /v1/insights/facilities/activity-detail` | Facility Status drill-down — per-facility active/inactive list |
+| `GET /v1/insights/facilities/adoption` | e-Buzima Adoption summary + per-facility drill-down |
 | `GET /v1/insights/deviations/trends` | Deviation trend chart |
 | `GET /v1/insights/events/trends` | Event volume trend chart |
+
+### RI-35 interaction model
+
+The dashboard shows only **country-level summaries**. Each indicator is one white card (title + info ⓘ). **Clicking anywhere on a card** reveals its per-facility breakdown **inline, inside the same card** (compliance-page style — no modal, no separate route), with **Status / District / Facility** filters. The global date filter (top bar, `event_time`) scopes everything; there is no per-drill-down date filter. Details tables put **District** first, then **Facility**.
 
 ### Wireframe
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ ┌──────────┐                                                                 │
-│ │ CCE      │  Dashboard                              [📅 From – To]         │
-│ │ Insights │                                                                 │
-│ ├──────────┤  Patient Compliance                                            │
-│ │          │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐   │
-│ │ Dashboard│  │ Tracked    │ │ Compliant  │ │ Non-Compl. │ │ Compliance │   │
-│ │ ● Dash   │  │ Cohort     │ │ Care       │ │ Care       │ │ Rate       │   │
-│ │Facilities│  │   248      │ │ Journeys   │ │ Journeys   │ │   72%      │   │
-│ │Compliance│  │            │ │    180     │ │    68      │ │            │   │
-│ │Deviations│  └────────────┘ └────────────┘ └────────────┘ └────────────┘   │
-│ │ Patients │  ┌────────────┐                                                 │
-│ │          │  │ Total      │  (Total Referrals — forms received by HIE)      │
-│ │          │  │ Referrals  │                                                 │
-│ │          │  └────────────┘                                                 │
-│ │          │  Facility Activity                                             │
-│ │ Events   │  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
-│ │ Ingestion│  │ Total      │ │ Active     │ │ Inactive   │                  │
-│ │          │  │ Facilities │ │ Facilities │ │ Facilities │                  │
-│ │          │  └────────────┘ └────────────┘ └────────────┘                  │
-│ │          │  ┌─ e-Buzima Adoption ─────────────────────────────────────┐   │
-│ │          │  │ (adoption metrics table — Facility | … | Referrals)     │   │
-│ │          │  └─────────────────────────────────────────────────────────┘   │
-│ │          │  ┌─ Deviation Trends ──────────┐ ┌─ Event Volume ──────────┐   │
-│ │          │  │   ╱╲    ╱╲                  │ │   ▄▄▆▆██▇▇▆▆▄▄██▆▆    │   │
-│ │          │  └─────────────────────────────┘ └─────────────────────────┘   │
-│ └──────────┘                                                                 │
+│  Dashboard                                              [📅 From – To]         │
+│  ┌─ Service Compliance                      ⓘ      ▸ Click to view details ─┐  │
+│  │ ┌──────────┐┌──────────┐┌──────────┐┌──────────┐                        │  │
+│  │ │ Total    ││ Compliant││ Non-     ││Compliance│                        │  │
+│  │ │ Patients ││ Care     ││ Compliant││ Rate     │                        │  │
+│  │ └──────────┘└──────────┘└──────────┘└──────────┘                        │  │
+│  │ (on click) Compliance Details (N)  [Status ▾][District ▾][Facility ▾]   │  │
+│  │   District | Facility | Tracked | Compliant | Non-Compliant | Rate      │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│  ┌─ Referrals ─── received / compliant / non-compliant / rate ── drill ────┐  │
+│  ┌─ Facility Status ─── total / active / inactive ───────────── drill ─────┐  │
+│  ┌─ e-Buzima Adoption ─ expected / actual / gap / rate (summary) ─ drill ──┐  │
+│  ┌─ Deviation Trends ──────────┐ ┌─ Event Volume ──────────┐                 │
+│  └─────────────────────────────┘ └─────────────────────────┘                 │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### MetricCard Details
+### Cards & drill-downs
 
-| Card | Value Source | Description |
-|------|-------------|-------------|
-| Tracked Cohort | `dashboard/compliance-summary → patients.trackedPatients` | Total patients enrolled |
-| Compliant Care Journeys | `patients.compliantPatients` | No active deviations |
-| Non-Compliant Care Journeys | `patients.nonCompliantPatients` | Has active deviations |
-| Compliance Rate | `patients.complianceRate` | Compliant ÷ tracked (%) |
-| Total Referrals | `dashboard/referrals → totalReferralsReceived` | Referral forms successfully received by HIE in the selected period (by clinical `event_time`). Sits in the top metrics row, after Compliance Rate. |
-| Total / Active / Inactive Facilities | `facilities/activity-summary` | Facility activity in the period |
-| e-Buzima Adoption | `facilities/adoption` (`EbuzimaAdoptionCard`) | Source-system adoption metrics; the table now includes a **Referrals** column (per-facility count from `dashboard/referrals → byFacility[].count`, keyed by `facilityId`). |
+| Card | Summary source | Drill-down (inline, on click) | Filters |
+|------|-------------|-------------|---------|
+| **Service Compliance** — Total Patients received in HIE, Compliant / Non-Compliant Care Journeys, Compliance Rate | `dashboard/compliance-summary → patients.*` | `facilities/ranking` — per-facility Tracked / Compliant / Non-Compliant / Rate, worst-first (`ComplianceFacilityBreakdown`) | Status (Compliant / Non-Compliant), District, Facility |
+| **Referrals** — Received by HIE, Compliant, Non-Compliant, Referral Compliance Rate | `dashboard/referrals` (`totalReferralsReceived`, `compliantReferrals`, `nonCompliantReferrals`, `referralComplianceRate`) | `byFacility[]` — per-facility Received / Compliant / Non-Compliant / Rate (`ReferralMetricsCard`) | Status, District, Facility |
+| **Facility Status** — Total / Active / Inactive | `facilities/activity-summary` | `facilities/activity-detail` — per-facility Status + Last Activity (`FacilityActivityCards`) | Status (Active / Inactive), District, Facility |
+| **e-Buzima Adoption** — Expected / Actual visits per day, Reporting Gap, Adoption Rate (country roll-up) | `facilities/adoption` | per-facility adoption table (`EbuzimaAdoptionCard`) | District, Facility |
 
-> There is no separate standalone "Referrals" card — the metric surfaces as the **Total Referrals** top card plus the per-facility **Referrals** column on the e-Buzima Adoption table.
+Notes:
+- "Compliant" for referrals = a received referral matched to a Referral step in a tracked care journey; "Non-Compliant" = received − compliant. Referral counts are keyed on clinical `event_time`.
+- Compliance & Referral drill-down tables list only facilities **with data** (tracked > 0 / received > 0); Facility Status & Adoption list all facilities. Filter dropdowns always offer the full facility/district list.
+- Rate columns are colour-coded (green ≥ 80, amber ≥ 50, red < 50).
 
 ---
 
@@ -725,10 +719,15 @@ Horizontal stacked bar showing proportions. Used for status breakdown, complianc
 - **ErrorAlert** (`ErrorAlert.tsx`) — Error message display with optional retry
 - **EmptyState** (`EmptyState.tsx`) — No data placeholder
 - **LoadingSpinner** (`LoadingSpinner.tsx`) — Tailwind spinner
+- **ClickableMetricGroup** (`ClickableMetricGroup.tsx`, RI-35) — a group of metric tiles in one white `Card` (title + info ⓘ); clicking the tiles toggles a `detail` drill-down rendered inside the same card.
+- **DistrictSelect** (`DistrictSelect.tsx`, RI-35) — exports `DistrictFacilityFilter` (cascading District→Facility dropdowns), `LabeledSelect` (status/category filter), and the `filterByDistrictFacility` / `districtOptions` client-side helpers used by every drill-down.
 
 ### Facility cards (`components/facilities/`)
 
-- **EbuzimaAdoptionCard** — e-Buzima adoption metrics table (Dashboard).
+- **EbuzimaAdoptionCard** — Dashboard adoption card: country summary + inline per-facility drill-down.
+- **ReferralMetricsCard** (RI-35) — Dashboard Referrals card: received / compliant / non-compliant / rate + inline per-facility drill-down.
+- **ComplianceFacilityBreakdown** (RI-35) — Service Compliance drill-down (per-facility compliant/non-compliant/rate from `facilities/ranking`), rendered inside the compliance card.
+- **FacilityActivityCards** — Dashboard/Facilities Facility Status card: total/active/inactive + inline per-facility drill-down.
 - **FacilityHighlightsCard** — Top 5 / Bottom 5 facilities by compliance (Facility Analytics).
 - **FacilityRankingCard** — ranked facility leaderboard with Rank-By pills + order toggle + search.
 
