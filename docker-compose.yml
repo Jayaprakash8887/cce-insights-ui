@@ -3,12 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_AUTH_ENABLED: "true"
-        VITE_KEYCLOAK_URL: "http://keycloak.local:8189/auth"
-        VITE_KEYCLOAK_REALM: "cce"
-        VITE_KEYCLOAK_CLIENT_ID: "cce-insights-ui"
-        VITE_ROUTER_BASE: "/"
     container_name: cce-insights-ui
     ports:
       - "3001:3001"
