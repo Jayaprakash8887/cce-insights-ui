@@ -13,9 +13,11 @@ interface MetricCardProps {
   linkTo?: string;
   onClick?: () => void;
   bgColor?: string;
+  /** When true, draws a highlight ring — used to mark the card whose drill-down is open. */
+  selected?: boolean;
 }
 
-export function MetricCard({ title, value, subtitle, description, denomination, icon, trend, trendUp, linkTo, onClick, bgColor }: MetricCardProps) {
+export function MetricCard({ title, value, subtitle, description, denomination, icon, trend, trendUp, linkTo, onClick, bgColor, selected }: MetricCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
 
@@ -24,7 +26,7 @@ export function MetricCard({ title, value, subtitle, description, denomination, 
 
   return (
     <div
-      className={`rounded-xl border border-gray-200 p-5 shadow-sm ${bgColor || 'bg-white'} ${clickable ? 'cursor-pointer transition-colors hover:border-blue-300 hover:bg-blue-50/30' : ''}`}
+      className={`rounded-xl border p-5 shadow-sm ${selected ? 'border-blue-400 ring-2 ring-blue-400' : 'border-gray-200'} ${bgColor || 'bg-white'} ${clickable ? 'cursor-pointer transition-colors hover:border-blue-300 hover:bg-blue-50/30' : ''}`}
       onClick={handleClick}
     >
       <div className="flex items-start justify-between">

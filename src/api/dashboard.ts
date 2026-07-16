@@ -64,11 +64,26 @@ export function getDashboardComplianceSummary(params?: {
 export interface FacilityReferralCount {
   facilityId: string;
   facilityName: string;
+  /** Facility's district (may be empty). */
+  district: string;
+  /** Referrals received by HIE. */
   count: number;
+  /** Compliant (matched to a care journey). */
+  compliant: number;
+  /** Non-compliant (received - matched). */
+  nonCompliant: number;
+  /** Compliant as a percentage of received. */
+  complianceRate: number;
 }
 
 export interface ReferralsKpi {
   totalReferralsReceived: number;
+  /** Of those received, matched to a Referral step ("compliant"). */
+  compliantReferrals: number;
+  /** Received but not matched to a care journey ("non-compliant"). */
+  nonCompliantReferrals: number;
+  /** Compliant as a percentage of received. */
+  referralComplianceRate: number;
   byFacility: FacilityReferralCount[];
 }
 

@@ -1233,10 +1233,12 @@ export function getDashboardComplianceSummary(params?: {
   return apiGet('/dashboard/compliance-summary', params);
 }
 
-// Referrals KPI — Total Referrals top card + per-facility Referrals column
-// (Dashboard e-Buzima Adoption table; Facility Ranking table). Filtered by clinical event_time.
-// response: { totalReferralsReceived: number,
-//             byFacility: [{ facilityId: string, facilityName: string, count: number }] }
+// Referrals KPI — Dashboard "Referrals" card (received / compliant / non-compliant / rate) with a
+// per-facility drill-down (RI-35). Filtered by clinical event_time.
+// response: { totalReferralsReceived: number, compliantReferrals: number,
+//             nonCompliantReferrals: number, referralComplianceRate: number,
+//             byFacility: [{ facilityId, facilityName, district, count, compliant,
+//                            nonCompliant, complianceRate }] }
 export function getReferralsKpi(params?: {
   facilityId?: string; startDate?: string; endDate?: string;
 }): Promise<ReferralsKpi> {
