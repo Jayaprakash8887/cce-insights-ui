@@ -2,9 +2,9 @@
 	# Encode responses with gzip/zstd
 	encode zstd gzip
 
-	# Proxy API calls directly to insights-service (no gateway)
+	# Proxy API calls through gateway-service for JWT validation.
 	handle /v1/insights/* {
-		reverse_proxy cce-insights-service:8084
+		reverse_proxy gateway-service:8090
 	}
 
 	# The SPA is served under /insights (assets live at /insights/assets/*). Strip the prefix so
