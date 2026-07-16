@@ -19,7 +19,7 @@ describe('districtOptions', () => {
   });
 
   it('is empty when no rows carry a district', () => {
-    expect(districtOptions([{ facilityId: 'X' }])).toEqual([]);
+    expect(districtOptions([{}, { district: '' }])).toEqual([]);
   });
 });
 
