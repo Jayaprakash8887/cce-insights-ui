@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/shared/PageHeader';
 import { MetricCard } from '../components/shared/MetricCard';
 import { Card } from '../components/shared/Card';
@@ -83,8 +83,13 @@ export default function ComplianceOverview() {
   const protocols = useProtocols();
   const facilities = useFacilityLookup();
 
+  // Default to the first protocol on initial load ONLY. Runs once — otherwise selecting
+  // "All Protocols" (protocolId = '') would be immediately overwritten back to the first
+  // protocol, so the national (all-protocols) compliant/non-compliant view could never be shown.
+  const didDefaultProtocol = useRef(false);
   useEffect(() => {
-    if (!protocolId && protocols.data && protocols.data.length > 0) {
+    if (!didDefaultProtocol.current && !protocolId && protocols.data && protocols.data.length > 0) {
+      didDefaultProtocol.current = true;
       setProtocolId(protocols.data[0].id);
     }
   }, [protocols.data, protocolId]);
