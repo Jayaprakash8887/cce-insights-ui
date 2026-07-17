@@ -242,7 +242,6 @@ App.tsx (Sidebar + Header + Routes; providers live in main.tsx)
 │
 ├── /compliance/patients/:id → PatientDetail
 │   ├── ProtocolTrackingCard × N ("Tracking Since")
-│   ├── Tabs: Protocol Journey | Referral Events
 │   ├── Protocol Journey timeline (legend; hides superseded steps; synthetic DEVIATION status)
 │   ├── Step Details table (Action / State / Due / Completed / Source)
 │   └── Right column: Deviations + Intelligence Alerts cards

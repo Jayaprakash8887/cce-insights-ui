@@ -273,8 +273,8 @@ Notes:
 ## 5. Patient Detail
 
 **Route:** `/compliance/patients/:patientId`  
-**Purpose:** Individual patient view — protocol tracking with a tabbed **Protocol Journey** /
-**Referral Events** interface, plus cross-protocol deviations and intelligence-delivery alerts.
+**Purpose:** Individual patient view — protocol tracking with the **Protocol Journey**
+timeline, plus cross-protocol deviations and intelligence-delivery alerts.
 
 ### APIs Used
 
@@ -298,7 +298,6 @@ Notes:
 │         │  │ ████████░░░░░░░░                              [Details →]    │ │
 │         │  └───────────────────────────────────────────────────────────────┘ │
 │         │                                                                    │
-│         │  Tabs: [ Protocol Journey • ] [ Referral Events ]                  │
 │         │  ┌─ Protocol Journey ────────────────┐ ┌─ Deviations ───────────┐ │
 │         │  │ Legend: ● Completed ● Pending     │ │ ⚠ ORDER_VIOLATION      │ │
 │         │  │         ● Deviation ● Not started │ │ anc-visit-2            │ │
@@ -307,8 +306,6 @@ Notes:
 │         │  │  ● anc-visit-3  Pending           │ ┌─ Intelligence Alerts ──┐ │
 │         │  │  (superseded NOT_STARTED hidden)  │ │ overdue-alert · sent   │ │
 │         │  └───────────────────────────────────┘ └─────────────────────────┘ │
-│         │  (Referral Events tab → Outbound: Referral Initiated table +       │
-│         │   Inbound: Referral Closure table)                                 │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
