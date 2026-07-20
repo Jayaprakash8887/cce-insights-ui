@@ -108,10 +108,10 @@ export function FacilityActivityCards({ className }: { className?: string }) {
         <div className="mt-4 border-t border-gray-100 pt-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-gray-900">{STATUS_LABEL[openStatus]} ({list.length})</h3>
-            {!detail.isLoading && !detail.error && statusList.length > 0 && (
+            {!detail.isLoading && !detail.error && items.length > 0 && (
               <DistrictFacilityFilter
                 idPrefix="facility-status"
-                options={statusList}
+                options={items}
                 district={district}
                 facility={facility}
                 onDistrictChange={setDistrict}
