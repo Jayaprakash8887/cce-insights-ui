@@ -1,22 +1,28 @@
 import { apiGet, apiGetPaginated } from './client';
 import type { ComplianceSummary, FacilitySummary, PatientCompliance, GlobalFilters } from './types';
 
-export function getAllProtocolsComplianceSummary(filters?: GlobalFilters): Promise<ComplianceSummary> {
+export function getAllProtocolsComplianceSummary(
+  filters?: GlobalFilters,
+  dateFilterMode?: 'enrollment' | 'eventTime',
+): Promise<ComplianceSummary> {
   return apiGet('/protocols/compliance-summary', {
     facilityId: filters?.facilityId,
     startDate: filters?.startDate,
     endDate: filters?.endDate,
+    dateFilterMode,
   });
 }
 
 export function getProtocolComplianceSummary(
   protocolDefinitionId: string,
   filters?: GlobalFilters,
+  dateFilterMode?: 'enrollment' | 'eventTime',
 ): Promise<ComplianceSummary> {
   return apiGet(`/protocols/${encodeURIComponent(protocolDefinitionId)}/compliance-summary`, {
     facilityId: filters?.facilityId,
     startDate: filters?.startDate,
     endDate: filters?.endDate,
+    dateFilterMode,
   });
 }
 
@@ -41,7 +47,7 @@ export function getProtocolPatients(
     patientId?: string;
     startDate?: string;
     endDate?: string;
-    dateFilterMode?: 'enrollment' | 'activity';
+    dateFilterMode?: 'enrollment' | 'eventTime';
   },
 ) {
   return apiGetPaginated<PatientCompliance>(

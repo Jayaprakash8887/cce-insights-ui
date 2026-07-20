@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '../components/shared/PageHeader';
 import { PatientReferralCards } from '../components/patients/PatientReferralCards';
@@ -26,13 +26,23 @@ export default function PatientList() {
   const [pageSize, setPageSize] = useState(PATIENT_LIST_PAGE_SIZE);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
-  const [dateFilterMode, setDateFilterMode] = useState<'enrollment' | 'activity'>('enrollment');
+  // Default to "eventTime" (Clinical Event Date, RI-36) so the list agrees with the Dashboard card and
+  // Compliance Overview out of the box; the user can toggle to "enrollment" for the enrolled-in-range
+  // cohort. NB: "eventTime" is the CLINICAL event clock, NOT the system updated_at "activity" shown by
+  // the patient detail log — the label is "Clinical Event Date" to avoid that confusion.
+  const [dateFilterMode, setDateFilterMode] = useState<'enrollment' | 'eventTime'>('eventTime');
 
   const protocols = useProtocols();
   const cursor = page > 1 ? String((page - 1) * pageSize) : undefined;
 
+  // Default to the first protocol on initial load ONLY. Runs once — otherwise selecting
+  // "All Protocols" (protocolId = '') would be immediately overwritten back to the first
+  // protocol and could never be chosen (it then shows the "Select a protocol" empty state,
+  // since the patient list is per-protocol).
+  const didDefaultProtocol = useRef(false);
   useEffect(() => {
-    if (!protocolId && protocols.data && protocols.data.length > 0) {
+    if (!didDefaultProtocol.current && !protocolId && protocols.data && protocols.data.length > 0) {
+      didDefaultProtocol.current = true;
       setProtocolId(protocols.data[0].id);
     }
   }, [protocols.data, protocolId]);
@@ -72,8 +82,8 @@ export default function PatientList() {
     ? page < totalPages
     : Boolean(patients.data?.pagination.has_more);
 
-  const pageDescription = dateFilterMode === 'activity'
-    ? 'Distinct patients with step activity in the selected period. Compliant / Non-Compliant follows the same deviation-based rules as the dashboard.'
+  const pageDescription = dateFilterMode === 'eventTime'
+    ? 'Distinct patients with a protocol-matched clinical event received via HIE in the selected period (by clinical event date, not enrollment). Compliant / Non-Compliant follows the same deviation-based rules as the dashboard.'
     : 'Distinct patients enrolled in the selected protocol during the selected period. Compliant / Non-Compliant follows the same deviation-based rules as the dashboard.';
 
   return (
@@ -117,8 +127,19 @@ export default function PatientList() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-gray-500">Filter by:</span>
-            {(['enrollment', 'activity'] as const).map((mode) => (
+            <span className="flex items-center gap-1 text-xs font-medium text-gray-500">
+              Filter by:
+              <span className="group relative">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 cursor-help text-gray-400">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
+                </svg>
+                <span className="pointer-events-none absolute left-0 top-full z-30 mt-1 w-80 rounded-lg border border-gray-200 bg-gray-800 px-3 py-2 text-xs font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                  <strong>Clinical Event Date</strong>: patients with a protocol-matched event received via HIE within the range (by clinical event time). Agrees with the Dashboard card &amp; Compliance Overview.<br />
+                  <strong>Enrollment Date</strong>: patients enrolled during the range (by enrollment date).
+                </span>
+              </span>
+            </span>
+            {(['eventTime', 'enrollment'] as const).map((mode) => (
               <label key={mode} className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-700">
                 <input
                   type="radio"
@@ -128,7 +149,7 @@ export default function PatientList() {
                   onChange={() => { setDateFilterMode(mode); resetPagination(); }}
                   className="accent-blue-600"
                 />
-                {mode === 'enrollment' ? 'Enrollment Date' : 'Activity Date'}
+                {mode === 'eventTime' ? 'Clinical Event Date' : 'Enrollment Date'}
               </label>
             ))}
           </div>

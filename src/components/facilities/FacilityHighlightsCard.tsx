@@ -98,7 +98,7 @@ function FacilityRow({
       </div>
       <div className="flex shrink-0 items-center gap-4 text-xs">
         <div className="text-center">
-          <p className="text-gray-500">Enrollments</p>
+          <p className="text-gray-500">Tracked</p>
           <p className="font-semibold text-gray-700">{formatNumber(facility.totalEnrollments)}</p>
         </div>
         <div className="text-center">

@@ -94,7 +94,10 @@ export default function ComplianceOverview() {
     }
   }, [protocols.data, protocolId]);
 
-  const summary = useProtocolComplianceSummary(protocolId, facilityId || undefined);
+  // Compliance Overview is ALWAYS Clinical Event Date based (patients with a protocol-matched event by
+  // clinical event_time in range), so it reconciles with the Dashboard "Service Compliance" card. No
+  // toggle — the Clinical Event Date / Enrollment radio lives only on the Patients page.
+  const summary = useProtocolComplianceSummary(protocolId, facilityId || undefined, 'eventTime');
   const stepAnalytics = useStepAnalytics(protocolId, facilityId || undefined);
   const actionOrder = useActionOrder(protocolId);
 
@@ -142,10 +145,10 @@ export default function ComplianceOverview() {
         {data && (
           <>
             <p className="mb-3 text-xs text-gray-400">
-              Compliance metrics cover patients enrolled during the selected date range, not a sum across days.
+              Compliance metrics cover patients with a protocol-matched clinical event received via HIE during the selected date range (by clinical event date, not enrollment), not a sum across days.
             </p>
             <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <MetricCard title="Tracked Patients" value={formatNumber(data.totalEnrollments)} description="Total number of patients enrolled and being tracked under this protocol." />
+              <MetricCard title="Tracked Patients" value={formatNumber(data.totalEnrollments)} description="Distinct patients with a protocol-matched clinical event received via HIE in the selected range (by event time, not enrollment)." />
               <MetricCard title="Compliant Patients" value={formatNumber(data.compliantPatients)} denomination={formatNumber(data.totalEnrollments)} description="Patients with no deviations (overdue, missed, or order violations) under this protocol." />
               <MetricCard title="Non-Compliant Patients" value={formatNumber(data.totalEnrollments - data.compliantPatients)} denomination={formatNumber(data.totalEnrollments)} description="Patients with at least one deviation (overdue, missed, or order violation) under this protocol." />
               <MetricCard title="Compliance Rate" value={formatPercentage(data.complianceRate)} description="Percentage of compliant patients out of total tracked patients under this protocol." />
