@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '../components/shared/PageHeader';
+import { PatientReferralCards } from '../components/patients/PatientReferralCards';
 import { Card } from '../components/shared/Card';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorAlert } from '../components/shared/ErrorAlert';
@@ -79,6 +80,7 @@ export default function PatientList() {
     <>
       <PageHeader title="Patient Compliance" description={pageDescription} />
 
+      <PatientReferralCards className="mb-6" />
 
       <Card title="Patient List">
         <div className="mb-4 flex flex-wrap items-end gap-4">
