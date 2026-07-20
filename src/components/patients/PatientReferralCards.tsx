@@ -8,20 +8,8 @@ import { TableRangePagination } from '../shared/TableRangePagination';
 import { usePatientReferralsReceived } from '../../hooks/usePatients';
 import { formatNumber } from '../../utils/formatters';
 import { formatDate } from '../../utils/dates';
-import type { PatientReferral } from '../../api/types';
 
 const PAGE_SIZE = 12; // divisible by 2 and 3 — fills the drill-down grid rows evenly
-
-/** Compliance badge for a patient's referrals (matched = completed a Referral step). */
-function referralBadge(p: PatientReferral): { label: string; className: string } {
-  if (p.referralCount > 0 && p.matchedCount >= p.referralCount) {
-    return { label: 'Compliant', className: 'bg-green-50 text-green-700' };
-  }
-  if (p.matchedCount > 0) {
-    return { label: 'Partial', className: 'bg-amber-50 text-amber-700' };
-  }
-  return { label: 'Received', className: 'bg-gray-100 text-gray-600' };
-}
 
 /**
  * RI-44: Referral indicators on the Patients page — Created / Received by HIE / Failed. Each is a
@@ -93,22 +81,16 @@ export function PatientReferralCards({ className }: { className?: string }) {
             <>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                 {paginated.map((p) => {
-                  const badge = referralBadge(p);
                   const facility = p.facilityName || p.facilityId || '—';
                   const sub = p.lastReferral ? `${facility} · ${formatDate(p.lastReferral)}` : facility;
                   return (
                     <Link
                       key={p.patientId}
                       to={`/compliance/patients/${encodeURIComponent(p.patientId)}`}
-                      className="flex items-center justify-between gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:border-blue-300 hover:bg-blue-50/30"
+                      className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors hover:border-blue-300 hover:bg-blue-50/30"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-blue-600" title={p.patientId}>{p.patientId}</p>
-                        <p className="truncate text-xs text-gray-500" title={sub}>{sub}</p>
-                      </div>
-                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>
-                        {badge.label}
-                      </span>
+                      <p className="truncate text-sm font-medium text-blue-600" title={p.patientId}>{p.patientId}</p>
+                      <p className="truncate text-xs text-gray-500" title={sub}>{sub}</p>
                     </Link>
                   );
                 })}
