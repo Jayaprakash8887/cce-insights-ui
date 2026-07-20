@@ -210,18 +210,18 @@ full Keycloak + gateway deployment procedure.
 
 ```
 App.tsx (Sidebar + Header + Routes; providers live in main.tsx)
-├── Sidebar (flat nav list — 7 links)
+├── Sidebar (flat nav list — 8 links)
 ├── Header (global DateRangeFilter + Sign-out button when authEnabled)
 ├── <Routes> (inline; pages are React.lazy + Suspense)
 │
-├── / → DashboardPage    (RI-35: country-level cards, each an inline click-to-expand drill-down)
-│   ├── ClickableMetricGroup "Service Compliance" — 4 MetricCards + ComplianceFacilityBreakdown detail
-│   ├── ReferralMetricsCard — 4 MetricCards (received/compliant/non-compliant/rate) + per-facility detail
-│   ├── FacilityActivityCards — Total/Active/Inactive + per-facility active/inactive detail
-│   ├── EbuzimaAdoptionCard — country adoption summary + per-facility detail
-│   │     (drill-downs share DistrictFacilityFilter + LabeledSelect status filter, in shared/DistrictSelect)
-│   ├── DeviationTrendChart (area)
-│   └── EventVolumeTrendChart (stacked area — by resource type)
+├── / → DashboardPage    (RI-38: high-level NATIONAL indicators only — each KpiCard links to its section)
+│   ├── Service Compliance Rate  → /compliance            (context: compliant of tracked; health-coloured)
+│   ├── Total Facilities         → /facilities            (context: active · inactive)
+│   ├── eBuzima Adoption Rate    → /adoption               (context: actual vs expected / day)
+│   ├── Referral Rate            → /compliance/patients    (placeholder 0% — definition pending)
+│   └── Ingestion Rate           → /ingestion              (acceptance %)
+│         (KpiCard: icon + value + context line + drill-in link; balanced 3-over-2 grid.
+│          Detail breakdowns AND trend charts were moved to their own section pages — RI-38.)
 │
 ├── /compliance → ComplianceOverviewPage
 │   ├── ProtocolSelector + FacilityFilter (dropdowns)
@@ -265,6 +265,9 @@ App.tsx (Sidebar + Header + Routes; providers live in main.tsx)
 │   └── FacilityRankingCard (Rank-By pills + Best/Worst-First toggle + search;
 │            color-coded compliance column with legend)
 │
+├── /adoption → Adoption   (RI-38: new side menu — e-Buzima adoption moved off the Dashboard)
+│   └── EbuzimaAdoptionCard — country adoption summary + per-facility breakdown
+│
 ├── /practitioners → PractitionerAnalytics  (URL-only; not in sidebar)
 │   ├── Metric tiles + Rank-By pills (Step Completion % / Patients Served) + search
 │   └── Ranking table (Rank / Practitioner / Facility / Patients / Step Completion / Steps)
@@ -286,7 +289,8 @@ App.tsx (Sidebar + Header + Routes; providers live in main.tsx)
     └── DownloadButton
 ```
 
-> **Sidebar vs routes:** the sidebar links to 7 pages (see §7). `Practitioners`, `Intelligence`,
+> **Sidebar vs routes:** the sidebar links to 8 pages (Dashboard, Facilities, Compliance,
+> Deviations, Patients, Adoption, Events, Ingestion — see §7). `Practitioners`, `Intelligence`,
 > and `Exports` are valid routes but are reachable by direct URL only — they are not in the nav.
 
 ---
@@ -429,6 +433,7 @@ in the Docker image) wraps the app in `src/main.tsx`. `App.tsx` declares the rou
   <Route path="/deviations" element={<Deviations />} />
   <Route path="/events" element={<EventVolume />} />
   <Route path="/facilities" element={<FacilityAnalytics />} />
+  <Route path="/adoption" element={<Adoption />} />
   <Route path="/practitioners" element={<PractitionerAnalytics />} />
   <Route path="/ingestion" element={<IngestionPipeline />} />
   <Route path="/intelligence" element={<Intelligence />} />

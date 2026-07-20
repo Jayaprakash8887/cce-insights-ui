@@ -6,6 +6,7 @@ import {
   SignalIcon,
   BuildingOffice2Icon,
   CogIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 
 const NAV_ITEMS = [
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { to: '/compliance', label: 'Compliance', icon: ClipboardDocumentCheckIcon },
   { to: '/deviations', label: 'Deviations', icon: ExclamationTriangleIcon },
   { to: '/compliance/patients', label: 'Patients', icon: ClipboardDocumentCheckIcon },
+  { to: '/adoption', label: 'Adoption', icon: ArrowTrendingUpIcon },
   { to: '/events', label: 'Events', icon: SignalIcon },
   { to: '/ingestion', label: 'Ingestion', icon: CogIcon },
 ];

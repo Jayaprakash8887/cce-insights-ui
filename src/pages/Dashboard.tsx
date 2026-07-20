@@ -1,96 +1,118 @@
+import { useMemo } from 'react';
+import {
+  ClipboardDocumentCheckIcon,
+  BuildingOffice2Icon,
+  ArrowTrendingUpIcon,
+  ArrowsRightLeftIcon,
+  InboxArrowDownIcon,
+} from '@heroicons/react/24/outline';
 import { PageHeader } from '../components/shared/PageHeader';
-import { MetricCard } from '../components/shared/MetricCard';
-import { Card } from '../components/shared/Card';
-import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorAlert } from '../components/shared/ErrorAlert';
-import { DeviationTrendChart } from '../components/charts/DeviationTrendChart';
-import { EventTrendChart } from '../components/charts/EventTrendChart';
-import { useState } from 'react';
-import { ClickableMetricGroup } from '../components/shared/ClickableMetricGroup';
-import { EbuzimaAdoptionCard } from '../components/facilities/EbuzimaAdoptionCard';
-import { FacilityActivityCards } from '../components/facilities/FacilityActivityCards';
-import { ReferralMetricsCard } from '../components/facilities/ReferralMetricsCard';
-import { ComplianceFacilityBreakdown } from '../components/facilities/ComplianceFacilityBreakdown';
-import { useEventTrends } from '../hooks/useEventVolume';
-import { useDeviationTrends } from '../hooks/useDeviations';
+import { KpiCard, rateTone } from '../components/shared/KpiCard';
 import { useDashboardComplianceSummary } from '../hooks/useDashboard';
+import { useFacilityActivitySummary, useAdoptionKpis } from '../hooks/useFacilities';
+import { useIngestionFunnel } from '../hooks/useIngestion';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
+// RI-38 — the Dashboard is only high-level NATIONAL indicators. Each card links into the side
+// menu where its detail lives; per-facility / per-protocol breakdowns and trend charts were moved
+// to those pages (Compliance, Facilities, the new Adoption menu, Patients, Ingestion, Deviations,
+// Events). Cards carry a supporting context line + health colour so the page still reads as an
+// insights overview rather than a single row of bare numbers.
 export default function Dashboard() {
-  const deviationTrends = useDeviationTrends('daily');
-  const eventTrends = useEventTrends('daily');
-  const complianceSummary = useDashboardComplianceSummary();
-  // RI-35: clicking a Service Compliance card reveals the per-facility breakdown inline.
-  const [showComplianceDetail, setShowComplianceDetail] = useState(false);
+  const compliance = useDashboardComplianceSummary();
+  const facilities = useFacilityActivitySummary();
+  const adoption = useAdoptionKpis();
+  const ingestion = useIngestionFunnel();
 
-  if (complianceSummary.isLoading) return <LoadingSpinner />;
+  // National adoption roll-up = Σ actual ÷ Σ expected across facilities — same formula as the
+  // Adoption card's country summary, so the tile and the Adoption page agree.
+  const adopt = useMemo(() => {
+    const rows = adoption.data ?? [];
+    const expected = rows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
+    const actual = rows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
+    const rate = expected > 0 ? Math.round((actual * 1000) / expected) / 10 : 0;
+    return { expected, actual, rate };
+  }, [adoption.data]);
 
-  if (complianceSummary.error) return <ErrorAlert error={complianceSummary.error} />;
-
-  const compliance = complianceSummary.data;
-  const patients = compliance?.patients;
-  const toggleCompliance = () => setShowComplianceDetail((v) => !v);
+  const p = compliance.data?.patients;
+  const f = facilities.data;
+  const i = ingestion.data;
 
   return (
     <>
-      <PageHeader title="Dashboard" description="High-level operational metrics for the selected period" />
+      <PageHeader title="Dashboard" description="High-level national indicators for the selected period" />
 
-      {/* Service Compliance — click the card to reveal the per-facility breakdown (RI-35) */}
-      <ClickableMetricGroup
-        title="Service Compliance"
-        description="Patient care-journey compliance for the selected period. Click for the per-facility breakdown."
-        open={showComplianceDetail}
-        onToggle={toggleCompliance}
-        detail={<ComplianceFacilityBreakdown />}
-      >
-        <MetricCard
-          title="Total Patients received in HIE"
-          description="Distinct patients received via the HIE (enrolled) during the selected period."
-          value={formatNumber(patients?.trackedPatients ?? 0)}
+      {compliance.error && <ErrorAlert error={compliance.error} />}
+
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">National Indicators</p>
+      {/* 6-col grid: row 1 = three col-span-2 cards, row 2 = two col-span-3 cards — both rows fill
+          the full width, so the odd (5) count has no orphaned gap. */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+        <KpiCard
+          className="lg:col-span-2"
+          title="Service Compliance Rate"
+          value={formatPercentage(p?.complianceRate ?? 0)}
+          tone={rateTone(p?.complianceRate)}
+          context={p ? `${formatNumber(p.compliantPatients)} of ${formatNumber(p.trackedPatients)} patients compliant` : undefined}
+          icon={ClipboardDocumentCheckIcon}
+          iconClass="bg-emerald-50 text-emerald-600"
+          linkTo="/compliance"
+          linkLabel="View compliance"
+          description="Compliant patients as a percentage of tracked patients."
+          loading={compliance.isLoading}
         />
-        <MetricCard
-          title="Compliant Care Journeys"
-          description="Enrolled patients with no deviations detected in the selected period."
-          value={formatNumber(patients?.compliantPatients ?? 0)}
-          denomination={formatNumber(patients?.trackedPatients ?? 0)}
+        <KpiCard
+          className="lg:col-span-2"
+          title="Total Facilities"
+          value={formatNumber(f?.totalInScope ?? 0)}
+          tone="neutral"
+          context={f ? `${formatNumber(f.activeFacilities)} active · ${formatNumber(f.inactiveFacilities)} inactive` : undefined}
+          icon={BuildingOffice2Icon}
+          iconClass="bg-blue-50 text-blue-600"
+          linkTo="/facilities"
+          linkLabel="View facilities"
+          description="All in-scope facilities. Active = facilities with a protocol-tracked event in the period."
+          loading={facilities.isLoading}
         />
-        <MetricCard
-          title="Non-Compliant Care Journeys"
-          description="Enrolled patients with at least one deviation detected in the selected period."
-          value={formatNumber(patients?.nonCompliantPatients ?? 0)}
-          denomination={formatNumber(patients?.trackedPatients ?? 0)}
+        <KpiCard
+          className="lg:col-span-2"
+          title="eBuzima Adoption Rate"
+          value={formatPercentage(adopt.rate)}
+          tone={rateTone(adopt.rate)}
+          context={adoption.data ? `${formatNumber(adopt.actual)} actual vs ${formatNumber(adopt.expected)} expected / day` : undefined}
+          icon={ArrowTrendingUpIcon}
+          iconClass="bg-violet-50 text-violet-600"
+          linkTo="/adoption"
+          linkLabel="View adoption"
+          description="Actual vs. expected daily reporting across facilities."
+          loading={adoption.isLoading}
         />
-        <MetricCard
-          title="Compliance Rate"
-          description="Compliant patients as a percentage of the tracked patients in the selected period."
-          value={formatPercentage(patients?.complianceRate ?? 0)}
+        <KpiCard
+          className="lg:col-span-3"
+          title="Referral Rate"
+          value={formatPercentage(0)}
+          tone="neutral"
+          context="Definition pending"
+          icon={ArrowsRightLeftIcon}
+          iconClass="bg-amber-50 text-amber-600"
+          linkTo="/compliance/patients"
+          linkLabel="View patients"
+          description="Referral Rate definition is being finalised — shown as 0% for now."
         />
-      </ClickableMetricGroup>
-
-      {/* Referral Metrics — received by HIE + compliant/non-compliant split, drill down to facilities (RI-35) */}
-      <ReferralMetricsCard className="mt-4" />
-
-      {/* Facility Status — click the card to reveal the facility list (RI-35) */}
-      <FacilityActivityCards className="mt-4" />
-
-      <EbuzimaAdoptionCard className="mt-6" />
-
-      {/* Trend Charts */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card title="Deviation Trends">
-          {deviationTrends.isLoading ? (
-            <LoadingSpinner />
-          ) : deviationTrends.data ? (
-            <DeviationTrendChart data={deviationTrends.data.trends} height={240} />
-          ) : null}
-        </Card>
-        <Card title="Event Volume">
-          {eventTrends.isLoading ? (
-            <LoadingSpinner />
-          ) : eventTrends.data ? (
-            <EventTrendChart data={eventTrends.data.trends} height={240} />
-          ) : null}
-        </Card>
+        <KpiCard
+          className="lg:col-span-3"
+          title="Ingestion Rate"
+          value={formatPercentage(i?.acceptanceRate ?? 0)}
+          tone={rateTone(i?.acceptanceRate)}
+          context={i ? `${formatNumber(i.accepted)} of ${formatNumber(i.totalReceived)} events accepted` : undefined}
+          icon={InboxArrowDownIcon}
+          iconClass="bg-cyan-50 text-cyan-600"
+          linkTo="/ingestion"
+          linkLabel="View ingestion"
+          description="Events accepted as a percentage of events received by the ingestion pipeline."
+          loading={ingestion.isLoading}
+        />
       </div>
     </>
   );

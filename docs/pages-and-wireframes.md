@@ -4,8 +4,8 @@
 > Each page maps to one or more Insights Service API endpoints. Compliance categories are binary: **Compliant** (`on_track`) and **Non-Compliant** (`non_compliant`).
 > Default date range: **90 days** (`VITE_DEFAULT_DATE_RANGE_DAYS`). The global header is a **From / To**
 > date-picker pair (`DateRangeFilter`); there is **no global facility selector** in the header — facility
-> scoping is per-page. The sidebar links to 7 pages: Dashboard, Facilities, Compliance, Deviations,
-> Patients, Events, Ingestion. (Practitioners, Intelligence, and Exports are URL-only — not in the nav.)
+> scoping is per-page. The sidebar links to 8 pages: Dashboard, Facilities, Compliance, Deviations,
+> Patients, Adoption, Events, Ingestion. (Practitioners, Intelligence, and Exports are URL-only — not in the nav.)
 
 ---
 
@@ -19,6 +19,7 @@
 6. [Deviations](#6-deviations)
 7. [Event Volume](#7-event-volume)
 8. [Facility Analytics](#8-facility-analytics)
+8a. [Adoption](#8a-adoption)
 9. [Practitioner Analytics](#9-practitioner-analytics)
 10. [Intelligence](#10-intelligence)
 11. [Ingestion Pipeline](#11-ingestion-pipeline)
@@ -30,59 +31,54 @@
 ## 1. Dashboard
 
 **Route:** `/`  
-**Purpose:** Landing page — **country-level** operational metrics grouped into four indicator cards, each with an inline per-facility **drill-down** (RI-35), plus trend snapshots. Default 90-day date range.
+**Purpose:** Landing page — **high-level national indicators only** (RI-38). Each indicator is a `KpiCard` showing the national number plus a supporting context line; the **whole card is a link** into the section where its detail lives. Per-facility / per-protocol breakdowns and the trend charts were moved to those section pages. Default 90-day date range.
 
 ### APIs Used
 
-| Endpoint | Purpose |
+| Endpoint | KpiCard |
 |----------|---------|  
-| `GET /v1/insights/dashboard/compliance-summary` | Service Compliance cards (tracked / compliant / non-compliant / rate) |
-| `GET /v1/insights/facilities/ranking` | Service Compliance drill-down — per-facility compliant / non-compliant / rate (`ComplianceFacilityBreakdown`) |
-| `GET /v1/insights/dashboard/referrals` | Referrals cards (received / compliant / non-compliant / rate) + per-facility drill-down |
-| `GET /v1/insights/facilities/activity-summary` | Facility Status cards (total / active / inactive) |
-| `GET /v1/insights/facilities/activity-detail` | Facility Status drill-down — per-facility active/inactive list |
-| `GET /v1/insights/facilities/adoption` | e-Buzima Adoption summary + per-facility drill-down |
-| `GET /v1/insights/deviations/trends` | Deviation trend chart |
-| `GET /v1/insights/events/trends` | Event volume trend chart |
+| `GET /v1/insights/dashboard/compliance-summary` | **Service Compliance Rate** (`patients.complianceRate`; context = compliant of tracked) |
+| `GET /v1/insights/facilities/activity-summary` | **Total Facilities** (`totalInScope`; context = active · inactive) |
+| `GET /v1/insights/facilities/adoption` | **eBuzima Adoption Rate** (Σ actual ÷ Σ expected; context = actual vs expected/day) |
+| `GET /v1/insights/dashboard/referrals` | **Referral Rate** — *placeholder 0%, definition pending* |
+| `GET /v1/insights/ingestion/funnel` | **Ingestion Rate** (`acceptanceRate`; context = accepted of received) |
 
-### RI-35 interaction model
+### Layout
 
-The dashboard shows only **country-level summaries**. Each indicator is one white card (title + info ⓘ). **Clicking anywhere on a card** reveals its per-facility breakdown **inline, inside the same card** (compliance-page style — no modal, no separate route), with **Status / District / Facility** filters. The global date filter (top bar, `event_time`) scopes everything; there is no per-drill-down date filter. Details tables put **District** first, then **Facility**.
+A single **"National Indicators"** grid of `KpiCard`s — each is an icon chip + title (+ ⓘ) + big value + context line + a "View … →" drill-in link. Rate values are health-coloured (green ≥ 80, amber ≥ 50, red < 50); plain counts are neutral. The five cards use a balanced **3-over-2** grid (6-col: three `col-span-2` on top, two `col-span-3` below) so the odd count has no orphaned gap. Whole card links to its section; the global date filter (`event_time`) scopes the numbers.
 
 ### Wireframe
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Dashboard                                              [📅 From – To]         │
-│  ┌─ Service Compliance                      ⓘ      ▸ Click to view details ─┐  │
-│  │ ┌──────────┐┌──────────┐┌──────────┐┌──────────┐                        │  │
-│  │ │ Total    ││ Compliant││ Non-     ││Compliance│                        │  │
-│  │ │ Patients ││ Care     ││ Compliant││ Rate     │                        │  │
-│  │ └──────────┘└──────────┘└──────────┘└──────────┘                        │  │
-│  │ (on click) Compliance Details (N)  [Status ▾][District ▾][Facility ▾]   │  │
-│  │   District | Facility | Tracked | Compliant | Non-Compliant | Rate      │  │
-│  └────────────────────────────────────────────────────────────────────────┘  │
-│  ┌─ Referrals ─── received / compliant / non-compliant / rate ── drill ────┐  │
-│  ┌─ Facility Status ─── total / active / inactive ───────────── drill ─────┐  │
-│  ┌─ e-Buzima Adoption ─ expected / actual / gap / rate (summary) ─ drill ──┐  │
-│  ┌─ Deviation Trends ──────────┐ ┌─ Event Volume ──────────┐                 │
-│  └─────────────────────────────┘ └─────────────────────────┘                 │
+│  NATIONAL INDICATORS                                                           │
+│  ┌─ Service Compliance ─┐ ┌─ Total Facilities ──┐ ┌─ eBuzima Adoption ──┐     │
+│  │ 🩺  75.0%           │ │ 🏢  17              │ │ 📈  0.0%            │     │
+│  │ 6 of 8 compliant    │ │ 2 active · 15 inact.│ │ 3 actual / 0 exp.   │     │
+│  │ View compliance →   │ │ View facilities →   │ │ View adoption →     │     │
+│  └─────────────────────┘ └─────────────────────┘ └─────────────────────┘     │
+│  ┌─ Referral Rate ──────────────────┐ ┌─ Ingestion Rate ─────────────────┐   │
+│  │ ⇄  —   (Definition pending)      │ │ 📥  98.2%                         │   │
+│  │ View patients →                  │ │ 108 of 110 accepted · View ing.→ │   │
+│  └──────────────────────────────────┘ └──────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Cards & drill-downs
+### Cards
 
-| Card | Summary source | Drill-down (inline, on click) | Filters |
-|------|-------------|-------------|---------|
-| **Service Compliance** — Total Patients received in HIE, Compliant / Non-Compliant Care Journeys, Compliance Rate | `dashboard/compliance-summary → patients.*` | `facilities/ranking` — per-facility Tracked / Compliant / Non-Compliant / Rate, worst-first (`ComplianceFacilityBreakdown`) | Status (Compliant / Non-Compliant), District, Facility |
-| **Referrals** — Received by HIE, Compliant, Non-Compliant, Referral Compliance Rate | `dashboard/referrals` (`totalReferralsReceived`, `compliantReferrals`, `nonCompliantReferrals`, `referralComplianceRate`) | `byFacility[]` — per-facility Received / Compliant / Non-Compliant / Rate (`ReferralMetricsCard`) | Status, District, Facility |
-| **Facility Status** — Total / Active / Inactive | `facilities/activity-summary` | `facilities/activity-detail` — per-facility Status + Last Activity (`FacilityActivityCards`) | Status (Active / Inactive), District, Facility |
-| **e-Buzima Adoption** — Expected / Actual visits per day, Reporting Gap, Adoption Rate (country roll-up) | `facilities/adoption` | per-facility adoption table (`EbuzimaAdoptionCard`) | District, Facility |
+| Card | Value | Context line | Links to |
+|------|-------|--------------|----------|
+| **Service Compliance Rate** | `patients.complianceRate` | compliant of tracked | `/compliance` |
+| **Total Facilities** | `totalInScope` | active · inactive | `/facilities` |
+| **eBuzima Adoption Rate** | Σ actual ÷ Σ expected | actual vs expected / day | `/adoption` |
+| **Referral Rate** | `—` (neutral placeholder, 0%) | "Definition pending" | `/compliance/patients` |
+| **Ingestion Rate** | `acceptanceRate` | accepted of received | `/ingestion` |
 
 Notes:
-- "Compliant" for referrals = a received referral matched to a Referral step in a tracked care journey; "Non-Compliant" = received − compliant. Referral counts are keyed on clinical `event_time`.
-- Compliance & Referral drill-down tables list only facilities **with data** (tracked > 0 / received > 0); Facility Status & Adoption list all facilities. Filter dropdowns always offer the full facility/district list.
-- Rate columns are colour-coded (green ≥ 80, amber ≥ 50, red < 50).
+- **Detail relocated (RI-38):** Compliant / Non-Compliant journeys → Compliance page; Active / Inactive → Facilities page; e-Buzima Adoption breakdown → new **Adoption** menu; **Deviation Trends → Deviations**, **Volume Trends → Events**.
+- **Referral Rate** is deferred — shown as a neutral `0%` "Definition pending" card until numerator/denominator are agreed; it still links to Patients.
+- The orphaned `ReferralMetricsCard` and `ComplianceFacilityBreakdown` components are retained (unused) for potential future tickets.
 
 ---
 
@@ -488,6 +484,26 @@ facility search). Color-coded compliance column with legend.
 > shown next to the facility).
 >
 > The **Non-Compliant Hotspots** section was removed from this page.
+
+---
+
+## 8a. Adoption
+
+**Route:** `/adoption`  ·  **Sidebar:** "Adoption" (new in RI-38)  
+**Purpose:** e-Buzima reporting adoption vs. the expected baseline. Moved off the Dashboard into its
+own side menu (RI-38); the Dashboard's **eBuzima Adoption Rate** card links here.
+
+### APIs Used
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /v1/insights/facilities/adoption` | Country adoption summary + per-facility breakdown |
+
+### Content
+
+Hosts the `EbuzimaAdoptionCard`: a country roll-up (Expected / Actual visits per day, Reporting Gap,
+Adoption Rate = Σ actual ÷ Σ expected) with a per-facility breakdown table (District / Facility sort,
+rate colour-coded). The global date filter scopes the period.
 
 ---
 
