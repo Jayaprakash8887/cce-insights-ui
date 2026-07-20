@@ -88,7 +88,7 @@ export function FacilityActivityCards({ className }: { className?: string }) {
         />
         <MetricCard
           title="Active Facilities"
-          description="Facilities that transmitted at least one HIE event within the selected period. Click for the list."
+          description="Facilities with at least one protocol-tracked event (an HIE event matched to a protocol / tracked care journey) within the selected period. Reconciles with the tracked patients in the Facility Ranking."
           value={cardValue(summary.data?.activeFacilities)}
           bgColor="bg-green-50"
           onClick={() => toggle('active')}
@@ -96,7 +96,7 @@ export function FacilityActivityCards({ className }: { className?: string }) {
         />
         <MetricCard
           title="Inactive Facilities"
-          description="In-scope facilities with no HIE events transmitted within the selected period. Click for the list."
+          description="In-scope facilities with no protocol-tracked events within the selected period (a facility may still be transmitting HIE events that are not matched to any protocol)."
           value={cardValue(summary.data?.inactiveFacilities)}
           bgColor="bg-red-50"
           onClick={() => toggle('inactive')}

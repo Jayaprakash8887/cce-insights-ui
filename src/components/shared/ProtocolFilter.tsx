@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useProtocols } from '../../hooks/useLookups';
 
 interface ProtocolFilterProps {
@@ -9,8 +9,13 @@ interface ProtocolFilterProps {
 export function ProtocolFilter({ value, onChange }: ProtocolFilterProps) {
   const protocols = useProtocols();
 
+  // Default to the first protocol on initial load ONLY. Runs once — otherwise selecting
+  // "All Protocols" (value = '') would be immediately overwritten back to the first protocol
+  // and could never be chosen.
+  const didDefault = useRef(false);
   useEffect(() => {
-    if (!value && protocols.data && protocols.data.length > 0) {
+    if (!didDefault.current && !value && protocols.data && protocols.data.length > 0) {
+      didDefault.current = true;
       onChange(protocols.data[0].id);
     }
   }, [protocols.data, value, onChange]);
