@@ -21,26 +21,51 @@ const STATUS_LABEL: Record<OpenStatus, string> = {
  * Facility Status (RI-42): Total / Active / Inactive indicators in one card. Each indicator is
  * individually clickable and opens ITS OWN drill-down — clicking "Active Facilities" lists the
  * active facilities, "Inactive Facilities" lists the inactive ones (Total → all). The open list is
- * further refinable by District / Facility. (Replaces the earlier single shared drill-down with a
- * Status dropdown.) Facilities page only.
+ * further refinable by District and Facility. Facilities page only.
  */
 export function FacilityActivityCards({ className }: { className?: string }) {
   const summary = useFacilityActivitySummary();
   const detail = useFacilityActivityDetail();
   const [openStatus, setOpenStatus] = useState<OpenStatus | null>(null);
   const [page, setPage] = useState(1);
+  const [districtFilter, setDistrictFilter] = useState('');
+  const [facilityFilter, setFacilityFilter] = useState(''); // facilityId
 
   const items = detail.data ?? [];
   const duplicateNames = useMemo(() => findDuplicateFacilityNames(items), [items]);
 
-  const list = useMemo(() => {
+  // Base list for the open indicator (before the district/facility refinements).
+  const statusList = useMemo(() => {
     if (openStatus === 'active') return items.filter((f) => f.active);
     if (openStatus === 'inactive') return items.filter((f) => !f.active);
     return items;
   }, [items, openStatus]);
 
-  // Reset paging whenever the open indicator or data changes.
-  useEffect(() => { setPage(1); }, [detail.data, openStatus]);
+  // Dropdown options are derived from the open indicator's own facilities.
+  const districts = useMemo(
+    () => Array.from(new Set(statusList.map((f) => f.district).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b)),
+    [statusList],
+  );
+  const facilityOptions = useMemo(
+    () => statusList
+      .filter((f) => !districtFilter || f.district === districtFilter)
+      .slice()
+      .sort((a, b) => (a.facilityName || '').localeCompare(b.facilityName || '')),
+    [statusList, districtFilter],
+  );
+
+  // Displayed list = open indicator, narrowed by District + Facility.
+  const list = useMemo(
+    () => statusList.filter((f) =>
+      (!districtFilter || f.district === districtFilter) &&
+      (!facilityFilter || f.facilityId === facilityFilter)),
+    [statusList, districtFilter, facilityFilter],
+  );
+
+  // Reset filters + paging when the open indicator or the data changes.
+  useEffect(() => { setDistrictFilter(''); setFacilityFilter(''); }, [openStatus]);
+  useEffect(() => { setPage(1); }, [detail.data, openStatus, districtFilter, facilityFilter]);
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
   const paginated = useMemo(
@@ -53,6 +78,9 @@ export function FacilityActivityCards({ className }: { className?: string }) {
 
   // Toggle a card's drill-down: click the open one to close.
   const toggle = (s: OpenStatus) => setOpenStatus((prev) => (prev === s ? null : s));
+
+  const selectClass =
+    'rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500';
 
   return (
     <Card
@@ -90,44 +118,86 @@ export function FacilityActivityCards({ className }: { className?: string }) {
 
       {openStatus && (
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <div className="mb-3">
-            <h3 className="text-sm font-semibold text-gray-900">{STATUS_LABEL[openStatus]} ({list.length})</h3>
-          </div>
+          <h3 className="mb-3 text-sm font-semibold text-gray-900">{STATUS_LABEL[openStatus]} ({list.length})</h3>
 
           {detail.isLoading ? (
             <LoadingSpinner />
           ) : detail.error ? (
             <ErrorAlert error={detail.error} />
-          ) : list.length === 0 ? (
+          ) : statusList.length === 0 ? (
             <p className="py-6 text-center text-sm text-gray-500">No facilities to display for this selection.</p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                {paginated.map((f) => {
-                  const name = formatFacilityDisplayName(f, duplicateNames);
-                  return (
-                    <div
-                      key={f.facilityId}
-                      className="flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2"
-                    >
-                      <span
-                        className={`h-2.5 w-2.5 flex-none rounded-full ${f.active ? 'bg-green-500' : 'bg-red-400'}`}
-                        title={f.active ? 'Active' : 'Inactive'}
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-gray-900" title={name}>{name}</p>
-                        <p className="truncate text-xs text-gray-500">{f.district || '—'}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="mb-3 flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">District</label>
+                  <select
+                    value={districtFilter}
+                    onChange={(e) => { setDistrictFilter(e.target.value); setFacilityFilter(''); }}
+                    className={`w-52 ${selectClass}`}
+                  >
+                    <option value="">All Districts</option>
+                    {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">Facility</label>
+                  <select
+                    value={facilityFilter}
+                    onChange={(e) => setFacilityFilter(e.target.value)}
+                    className={`w-64 ${selectClass}`}
+                  >
+                    <option value="">All Facilities</option>
+                    {facilityOptions.map((f) => (
+                      <option key={f.facilityId} value={f.facilityId}>
+                        {formatFacilityDisplayName(f, duplicateNames)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {(districtFilter || facilityFilter) && (
+                  <button
+                    type="button"
+                    onClick={() => { setDistrictFilter(''); setFacilityFilter(''); }}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
-              <TableRangePagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                totalCount={list.length}
-                onPageChange={setPage}
-              />
+
+              {list.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">No facilities match the selected filters.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                    {paginated.map((f) => {
+                      const name = formatFacilityDisplayName(f, duplicateNames);
+                      return (
+                        <div
+                          key={f.facilityId}
+                          className="flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2"
+                        >
+                          <span
+                            className={`h-2.5 w-2.5 flex-none rounded-full ${f.active ? 'bg-green-500' : 'bg-red-400'}`}
+                            title={f.active ? 'Active' : 'Inactive'}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900" title={name}>{name}</p>
+                            <p className="truncate text-xs text-gray-500">{f.district || '—'}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <TableRangePagination
+                    page={page}
+                    pageSize={PAGE_SIZE}
+                    totalCount={list.length}
+                    onPageChange={setPage}
+                  />
+                </>
+              )}
             </>
           )}
         </div>
