@@ -103,7 +103,7 @@ export function FacilityRankingCard() {
         </div>
       </div>
 
-      <Card title="Facility Ranking" description="Tracked patients enrolled during the selected period, counted once at their assigned facility. Compliance % reflects deviations detected in the period.">
+      <Card title="Facility Ranking" description="Tracked patients — those with a protocol-matched clinical event in the selected period (by clinical event date, not enrollment) — counted once at their assigned facility. Compliance % reflects deviations that occurred in the period.">
         {ranking.isPending ? <LoadingSpinner /> : ranking.error ? <ErrorAlert error={ranking.error} /> : ranking.data ? (
           <>
             <div className="overflow-x-auto">
