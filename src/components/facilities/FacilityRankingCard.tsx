@@ -160,8 +160,8 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                     <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Rank</th>
                     <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Facility</th>
                     <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4" rowSpan={2}>Referrals</th>
-                    <th className="border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
-                    <th className="border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
+                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
+                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
                     <th className="border-b border-l border-gray-200 pb-1 pl-4" rowSpan={2}>Status</th>
                   </tr>
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
