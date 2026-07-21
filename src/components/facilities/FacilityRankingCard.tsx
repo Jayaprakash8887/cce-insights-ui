@@ -1,47 +1,64 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../shared/Card';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { ErrorAlert } from '../shared/ErrorAlert';
 import { TableRangePagination } from '../shared/TableRangePagination';
-import { useFacilityRanking } from '../../hooks/useFacilities';
+import { useFacilityRanking, useAdoptionKpis, useFacilityActivityDetail } from '../../hooks/useFacilities';
 import { useReferralsKpi } from '../../hooks/useDashboard';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { getFacilityName } from '../../utils/facilityNames';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
 import { RANK_BY_OPTIONS, SORT_ORDER_OPTIONS } from '../../config';
-import type { RankBy, SortOrder } from '../../api/types';
+import type { RankBy, SortOrder, AdoptionKpi } from '../../api/types';
+import type { FacilityStatusFilter } from './FacilityActivityCards';
 
 const TABLE_PAGE_SIZE = 10;
 
-export function FacilityRankingCard() {
+export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: FacilityStatusFilter }) {
   const [rankBy, setRankBy] = useState<RankBy>('complianceRate');
   const [order, setOrder] = useState<SortOrder>('desc');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const ranking = useFacilityRanking({
-    rankBy,
-    order,
-    limit: 200,
-  });
+  const ranking = useFacilityRanking({ rankBy, order, limit: 200 });
   const referrals = useReferralsKpi();
+  const adoption = useAdoptionKpis();
+  const activity = useFacilityActivityDetail();
 
-  // Per-facility referral counts (same period/event_time) keyed for O(1) row lookup.
+  // Per-facility lookups (same period/filters) keyed for O(1) row joins.
   const referralByFacility = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of referrals.data?.byFacility ?? []) m.set(r.facilityId, r.count);
     return m;
   }, [referrals.data]);
 
+  const adoptionByFacility = useMemo(() => {
+    const m = new Map<string, AdoptionKpi>();
+    for (const a of adoption.data ?? []) m.set(a.facilityId, a);
+    return m;
+  }, [adoption.data]);
+
+  const activeByFacility = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const f of activity.data ?? []) m.set(f.facilityId, f.active);
+    return m;
+  }, [activity.data]);
+
   const filteredRows = useMemo(() => {
-    if (!ranking.data?.data) return [];
-    if (!search.trim()) return ranking.data.data;
-    const q = search.toLowerCase();
-    return ranking.data.data.filter((f) => {
-      const name = (f.facilityName ?? getFacilityName(f.facilityId)).toLowerCase();
-      return name.includes(q);
-    });
-  }, [ranking.data, search]);
+    let rows = ranking.data?.data ?? [];
+    // Facility Status filter (driven by the top indicator cards).
+    if (statusFilter !== 'all') {
+      const wantActive = statusFilter === 'active';
+      rows = rows.filter((f) => (activeByFacility.get(f.facilityId) ?? false) === wantActive);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      rows = rows.filter((f) =>
+        (f.facilityName ?? getFacilityName(f.facilityId)).toLowerCase().includes(q));
+    }
+    return rows;
+  }, [ranking.data, search, statusFilter, activeByFacility]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / TABLE_PAGE_SIZE));
   const paginatedRows = useMemo(
@@ -54,10 +71,12 @@ export function FacilityRankingCard() {
     [filteredRows],
   );
 
-  useEffect(() => { setPage(1); }, [rankBy, order, search]);
+  useEffect(() => { setPage(1); }, [rankBy, order, search, statusFilter]);
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
+
+  const statusLabel = statusFilter === 'active' ? 'Active' : statusFilter === 'inactive' ? 'Inactive' : null;
 
   return (
     <>
@@ -103,7 +122,13 @@ export function FacilityRankingCard() {
         </div>
       </div>
 
-      <Card title="Facility Ranking" description="Tracked patients — those with a protocol-matched clinical event in the selected period (by clinical event date, not enrollment) — counted once at their assigned facility. Compliance % reflects deviations that occurred in the period.">
+      <Card title="Facility Ranking" description="Tracked patients — those with a protocol-matched clinical event in the selected period (by clinical event date, not enrollment) — counted once at their assigned facility. Compliance % reflects deviations that occurred in the period. Adoption columns mirror the e-Buzima Adoption view. Click a facility to open it on the Compliance page.">
+        {statusLabel && (
+          <p className="mb-3 text-xs text-gray-500">
+            Filtered to <span className="font-semibold text-gray-700">{statusLabel}</span> facilities
+            {' '}(click the {statusLabel} indicator again to clear).
+          </p>
+        )}
         {ranking.isPending ? <LoadingSpinner /> : ranking.error ? <ErrorAlert error={ranking.error} /> : ranking.data ? (
           <>
             <div className="overflow-x-auto">
@@ -112,35 +137,65 @@ export function FacilityRankingCard() {
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="pb-2 pr-4">Rank</th>
                     <th className="pb-2 pr-4">Facility</th>
+                    <th className="pb-2 pr-4">Status</th>
                     <th className="pb-2 pr-4">Referrals</th>
                     <th className="pb-2 pr-4">Tracked Patients</th>
                     <th className="pb-2 pr-4">Compliance</th>
                     <th className="pb-2 pr-4">Deviations</th>
-                    <th className="pb-2">Events (period)</th>
+                    <th className="pb-2 pr-4 text-center">Expected Visits / Day</th>
+                    <th className="pb-2 pr-4 text-center">Actual Visits / Day</th>
+                    <th className="pb-2 pr-4 text-center">Reporting Gap / Day</th>
+                    <th className="pb-2 text-center">Adoption Rate</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {paginatedRows.map((f) => (
-                    <tr key={`${f.facilityId}-${f.rank}`} className="hover:bg-gray-50">
-                      <td className="py-2 pr-4 font-bold text-gray-400">{f.rank}</td>
-                      <td className="py-2 pr-4 font-medium text-gray-900">
-                        {formatFacilityDisplayName(f, duplicateFacilityNames)}
-                      </td>
-                      <td className="py-2 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
-                      <td className="py-2 pr-4">{formatNumber(f.totalEnrollments)}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          f.complianceRate >= 80 ? 'bg-green-50 text-green-700' :
-                          f.complianceRate >= 50 ? 'bg-amber-50 text-amber-700' :
-                          'bg-red-50 text-red-700'
-                        }`}>
-                          {formatPercentage(f.complianceRate)}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4">{formatNumber(f.activeDeviations)}</td>
-                      <td className="py-2 pr-4">{formatNumber(f.totalEvents)}</td>
-                    </tr>
-                  ))}
+                  {paginatedRows.map((f) => {
+                    const active = activeByFacility.get(f.facilityId) ?? false;
+                    const a = adoptionByFacility.get(f.facilityId);
+                    const gap = a?.reportingGapPerDay ?? 0;
+                    const adoptionRate = a?.adoptionRate ?? 0;
+                    const rateColor = adoptionRate >= 80 ? 'text-green-700' : adoptionRate >= 50 ? 'text-amber-700' : 'text-red-700';
+                    return (
+                      <tr key={`${f.facilityId}-${f.rank}`} className="hover:bg-gray-50">
+                        <td className="py-2 pr-4 font-bold text-gray-400">{f.rank}</td>
+                        <td className="py-2 pr-4 font-medium">
+                          <Link
+                            to={`/compliance?facility=${encodeURIComponent(f.facilityId)}`}
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                            title="Open this facility on the Compliance page"
+                          >
+                            {formatFacilityDisplayName(f, duplicateFacilityNames)}
+                          </Link>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-red-400'}`} />
+                            {active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
+                        <td className="py-2 pr-4">{formatNumber(f.totalEnrollments)}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            f.complianceRate >= 80 ? 'bg-green-50 text-green-700' :
+                            f.complianceRate >= 50 ? 'bg-amber-50 text-amber-700' :
+                            'bg-red-50 text-red-700'
+                          }`}>
+                            {formatPercentage(f.complianceRate)}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4">{formatNumber(f.activeDeviations)}</td>
+                        <td className="py-2 pr-4 text-center tabular-nums text-gray-600">{formatNumber(a?.expectedVisitsPerDay ?? 0)}</td>
+                        <td className="py-2 pr-4 text-center tabular-nums">{formatNumber(a?.actualVisitsPerDay ?? 0)}</td>
+                        <td className={`py-2 pr-4 text-center font-medium tabular-nums ${gap > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {gap > 0 ? `−${formatNumber(gap)}` : `+${formatNumber(Math.abs(gap))}`}
+                        </td>
+                        <td className={`py-2 text-center font-semibold ${rateColor}`}>{formatPercentage(adoptionRate, 2)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

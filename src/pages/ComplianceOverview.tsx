@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/shared/PageHeader';
 import { MetricCard } from '../components/shared/MetricCard';
 import { Card } from '../components/shared/Card';
@@ -77,8 +78,10 @@ function SubActionsPanel({
 }
 
 export default function ComplianceOverview() {
+  const [searchParams] = useSearchParams();
   const [protocolId, setProtocolId] = useState('');
-  const [facilityId, setFacilityId] = useState('');
+  // Pre-select a facility when arrived via a deep link (e.g. Facility Ranking → "?facility=<id>").
+  const [facilityId, setFacilityId] = useState(searchParams.get('facility') ?? '');
 
   const protocols = useProtocols();
   const facilities = useFacilityLookup();
