@@ -8,6 +8,7 @@ import { ErrorAlert } from '../components/shared/ErrorAlert';
 import { useProtocolComplianceSummary } from '../hooks/useComplianceSummary';
 import { useStepAnalytics, useActionOrder } from '../hooks/useProtocols';
 import { useProtocols, useFacilityLookup } from '../hooks/useLookups';
+import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
 /* Collapsible sub-actions panel for the Service Workflow Compliance timeline */
@@ -84,8 +85,11 @@ export default function ComplianceOverview() {
   // Pre-select a facility when arrived via a deep link (e.g. Facility Ranking → "?facility=<id>").
   const [facilityId, setFacilityId] = useState(searchParams.get('facility') ?? '');
 
+  const { district } = useGlobalFilters();
   const protocols = useProtocols();
   const facilities = useFacilityLookup();
+  // Constrain the Facility picker to the globally-selected district (RI global filter).
+  const facilityOptions = (facilities.data ?? []).filter((fac) => !district || fac.district === district);
 
   // Default to the first protocol on initial load ONLY. Runs once — otherwise selecting
   // "All Protocols" (protocolId = '') would be immediately overwritten back to the first
@@ -136,7 +140,7 @@ export default function ComplianceOverview() {
               className="w-64 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             >
               <option value="">All Facilities</option>
-              {facilities.data?.map((f) => (
+              {facilityOptions.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>

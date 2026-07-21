@@ -3,7 +3,7 @@ import type { StepAnalytics, CompletionFunnel, OutcomeDistribution, EnrollmentTr
 
 export function getStepAnalytics(
   protocolDefinitionId: string,
-  params?: { facilityId?: string; startDate?: string; endDate?: string },
+  params?: { facilityId?: string; district?: string; startDate?: string; endDate?: string },
 ): Promise<StepAnalytics> {
   return apiGet(`/protocols/${encodeURIComponent(protocolDefinitionId)}/step-analytics`, params);
 }

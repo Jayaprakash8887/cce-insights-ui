@@ -45,6 +45,7 @@ export function useProtocolPatients(
       startDate: filters.startDate,
       endDate: filters.endDate,
       facilityId: params?.facilityId ?? filters.facilityId,
+      district: filters.district,
       dateFilterMode: params?.dateFilterMode ?? 'enrollment',
     }),
     enabled: !!protocolDefinitionId,
