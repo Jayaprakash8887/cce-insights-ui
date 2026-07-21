@@ -9,19 +9,29 @@ import { useReferralsKpi } from '../../hooks/useDashboard';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { getFacilityName } from '../../utils/facilityNames';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
-import { RANK_BY_OPTIONS, SORT_ORDER_OPTIONS } from '../../config';
-import type { RankBy, SortOrder, AdoptionKpi } from '../../api/types';
+import { SORT_ORDER_OPTIONS } from '../../config';
+import type { SortOrder, AdoptionKpi } from '../../api/types';
 import type { FacilityStatusFilter } from './FacilityActivityCards';
 
 const TABLE_PAGE_SIZE = 10;
 
+// The ranking is sorted client-side because two of the three sort metrics (Referrals, Adoption Rate)
+// are joined in from other endpoints and are not sortable on the ranking API.
+type SortKey = 'referrals' | 'complianceRate' | 'adoptionRate';
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'referrals', label: 'Referrals' },
+  { value: 'complianceRate', label: 'Compliance' },
+  { value: 'adoptionRate', label: 'Adoption Rate' },
+];
+
 export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: FacilityStatusFilter }) {
-  const [rankBy, setRankBy] = useState<RankBy>('complianceRate');
+  const [sortKey, setSortKey] = useState<SortKey>('complianceRate');
   const [order, setOrder] = useState<SortOrder>('desc');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const ranking = useFacilityRanking({ rankBy, order, limit: 200 });
+  // Fetch all facility rows once; ordering is applied client-side below.
+  const ranking = useFacilityRanking({ rankBy: 'complianceRate', order: 'desc', limit: 200 });
   const referrals = useReferralsKpi();
   const adoption = useAdoptionKpis();
   const activity = useFacilityActivityDetail();
@@ -45,8 +55,14 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
     return m;
   }, [activity.data]);
 
+  const sortValue = useMemo(() => (facilityId: string, complianceRate: number) => {
+    if (sortKey === 'referrals') return referralByFacility.get(facilityId) ?? 0;
+    if (sortKey === 'adoptionRate') return adoptionByFacility.get(facilityId)?.adoptionRate ?? 0;
+    return complianceRate;
+  }, [sortKey, referralByFacility, adoptionByFacility]);
+
   const filteredRows = useMemo(() => {
-    let rows = ranking.data?.data ?? [];
+    let rows = [...(ranking.data?.data ?? [])];
     // Facility Status filter (driven by the top indicator cards).
     if (statusFilter !== 'all') {
       const wantActive = statusFilter === 'active';
@@ -57,8 +73,13 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
       rows = rows.filter((f) =>
         (f.facilityName ?? getFacilityName(f.facilityId)).toLowerCase().includes(q));
     }
+    // Client-side sort by the selected metric + order (Best First = desc, Worst First = asc).
+    rows.sort((a, b) => {
+      const diff = sortValue(a.facilityId, a.complianceRate) - sortValue(b.facilityId, b.complianceRate);
+      return order === 'desc' ? -diff : diff;
+    });
     return rows;
-  }, [ranking.data, search, statusFilter, activeByFacility]);
+  }, [ranking.data, search, statusFilter, activeByFacility, sortValue, order]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / TABLE_PAGE_SIZE));
   const paginatedRows = useMemo(
@@ -71,7 +92,7 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
     [filteredRows],
   );
 
-  useEffect(() => { setPage(1); }, [rankBy, order, search, statusFilter]);
+  useEffect(() => { setPage(1); }, [sortKey, order, search, statusFilter]);
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
@@ -82,13 +103,13 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
     <>
       <div className="mb-4 flex flex-wrap items-end gap-4">
         <div className="flex gap-2 items-end">
-          {RANK_BY_OPTIONS.map((opt) => (
+          {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => setRankBy(opt.value as RankBy)}
+              onClick={() => setSortKey(opt.value)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                rankBy === opt.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                sortKey === opt.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {opt.label}
@@ -154,15 +175,16 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {paginatedRows.map((f) => {
+                  {paginatedRows.map((f, i) => {
+                    const rank = (page - 1) * TABLE_PAGE_SIZE + i + 1;
                     const active = activeByFacility.get(f.facilityId) ?? false;
                     const a = adoptionByFacility.get(f.facilityId);
                     const gap = a?.reportingGapPerDay ?? 0;
                     const adoptionRate = a?.adoptionRate ?? 0;
                     const rateColor = adoptionRate >= 80 ? 'text-green-700' : adoptionRate >= 50 ? 'text-amber-700' : 'text-red-700';
                     return (
-                      <tr key={`${f.facilityId}-${f.rank}`} className="hover:bg-gray-50">
-                        <td className="py-2 pr-4 font-bold text-gray-400">{f.rank}</td>
+                      <tr key={f.facilityId} className="hover:bg-gray-50">
+                        <td className="py-2 pr-4 font-bold text-gray-400">{rank}</td>
                         <td className="py-2 pr-4 font-medium">
                           <Link
                             to={`/compliance?facility=${encodeURIComponent(f.facilityId)}`}
@@ -208,7 +230,7 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
               <p className="py-8 text-center text-sm text-gray-500">No facilities match the current filters</p>
             )}
             <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-              <span className="font-medium">Compliance:</span>
+              <span className="font-medium">Compliance &amp; Adoption Rate:</span>
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-green-500" /> ≥ 80%</span>
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> 50–79%</span>
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> &lt; 50%</span>
