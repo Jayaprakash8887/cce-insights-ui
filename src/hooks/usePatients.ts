@@ -3,8 +3,18 @@ import {
   getPatientTimeline, getPatientProtocolTracking,
   getPatientProtocolTrackingDetail, getPatientEvents, getPatientDeviations,
   getPatientIntelligenceDeliveries, getAtRiskHotspots, getRepeatDeviations,
+  getReferralsReceivedByHie,
 } from '../api/patients';
 import { useGlobalFilters } from './useGlobalFilters';
+
+/** RI-44 — patients with a referral received by HIE in the selected period. */
+export function usePatientReferralsReceived() {
+  const filters = useGlobalFilters();
+  return useQuery({
+    queryKey: ['patients', 'referrals', 'received-by-hie', filters],
+    queryFn: () => getReferralsReceivedByHie(filters),
+  });
+}
 
 export function usePatientTimeline(patientId: string) {
   const filters = useGlobalFilters();

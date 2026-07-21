@@ -3,8 +3,16 @@ import { apiGetPaginated } from './client';
 import type {
   PatientTimeline, ProtocolTracking, ProtocolTrackingDetail,
   PatientEvent, PatientDeviation, PatientIntelligenceDelivery,
-  AtRiskHotspot, RepeatDeviationPatient,
+  AtRiskHotspot, RepeatDeviationPatient, PatientReferral, GlobalFilters,
 } from './types';
+
+/** RI-44 — patients behind the "Referrals Received by HIE" indicator (event_time-scoped). */
+export function getReferralsReceivedByHie(filters?: GlobalFilters): Promise<PatientReferral[]> {
+  return apiGet('/patients/referrals/received-by-hie', {
+    startDate: filters?.startDate,
+    endDate: filters?.endDate,
+  });
+}
 
 export function getPatientTimeline(
   patientId: string,

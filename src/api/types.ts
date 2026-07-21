@@ -508,6 +508,16 @@ export interface FacilityActivityItem {
   active: boolean;
 }
 
+// One patient behind the "Referrals Received by HIE" indicator (RI-44 drill-down).
+export interface PatientReferral {
+  patientId: string;
+  facilityId: string;
+  facilityName: string;
+  lastReferral: string;   // ISO datetime of the most recent referral event
+  referralCount: number;
+  matchedCount: number;
+}
+
 // ─── Facility Reference ──────────────────────────────────────
 
 export interface FacilityReference {
