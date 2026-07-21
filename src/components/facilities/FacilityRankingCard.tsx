@@ -137,7 +137,6 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="pb-2 pr-4">Rank</th>
                     <th className="pb-2 pr-4">Facility</th>
-                    <th className="pb-2 pr-4">Status</th>
                     <th className="pb-2 pr-4">Referrals</th>
                     <th className="pb-2 pr-4">Tracked Patients</th>
                     <th className="pb-2 pr-4">Compliance</th>
@@ -145,7 +144,8 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                     <th className="pb-2 pr-4 text-center">Expected Visits / Day</th>
                     <th className="pb-2 pr-4 text-center">Actual Visits / Day</th>
                     <th className="pb-2 pr-4 text-center">Reporting Gap / Day</th>
-                    <th className="pb-2 text-center">Adoption Rate</th>
+                    <th className="pb-2 pr-4 text-center">Adoption Rate</th>
+                    <th className="pb-2">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -167,14 +167,6 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                             {formatFacilityDisplayName(f, duplicateFacilityNames)}
                           </Link>
                         </td>
-                        <td className="py-2 pr-4">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                          }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-red-400'}`} />
-                            {active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
                         <td className="py-2 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
                         <td className="py-2 pr-4">{formatNumber(f.totalEnrollments)}</td>
                         <td className="py-2 pr-4">
@@ -192,7 +184,15 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                         <td className={`py-2 pr-4 text-center font-medium tabular-nums ${gap > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           {gap > 0 ? `−${formatNumber(gap)}` : `+${formatNumber(Math.abs(gap))}`}
                         </td>
-                        <td className={`py-2 text-center font-semibold ${rateColor}`}>{formatPercentage(adoptionRate, 2)}</td>
+                        <td className={`py-2 pr-4 text-center font-semibold ${rateColor}`}>{formatPercentage(adoptionRate, 2)}</td>
+                        <td className="py-2">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-red-400'}`} />
+                            {active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
                       </tr>
                     );
                   })}
