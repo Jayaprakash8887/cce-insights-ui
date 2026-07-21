@@ -160,21 +160,21 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                       bottom-aligned + styled like the sub-headers, so every column label lands on
                       one line while the group labels float above their sub-columns. */}
                   <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                    <th className="border-b border-gray-200 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Rank</th>
-                    <th className="border-b border-gray-200 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Facility</th>
-                    <th className="border-b border-l border-gray-200 pb-2 pl-4 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Referrals</th>
-                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
-                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
-                    <th className="border-b border-l border-gray-200 pb-2 pl-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Status</th>
+                    <th className="border-b border-gray-200 pt-3 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Rank</th>
+                    <th className="border-b border-gray-200 pt-3 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Facility</th>
+                    <th className="border-b border-l border-gray-200 pt-3 pb-2 pl-4 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Referrals</th>
+                    <th className="border-b border-l border-gray-200 pt-3 pb-1.5 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
+                    <th className="border-b border-l border-gray-200 pt-3 pb-1.5 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
+                    <th className="border-b border-l border-gray-200 pt-3 pb-2 pl-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Status</th>
                   </tr>
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
-                    <th className="border-l border-gray-200 pb-2 pl-4 pr-4">Tracked Patients</th>
-                    <th className="pb-2 pr-4">Deviations</th>
-                    <th className="pb-2 pr-4">Compliance</th>
-                    <th className="border-l border-gray-200 pb-2 pl-4 pr-4 text-center">Expected Visits / Day</th>
-                    <th className="pb-2 pr-4 text-center">Actual Visits / Day</th>
-                    <th className="pb-2 pr-4 text-center">Reporting Gap / Day</th>
-                    <th className="pb-2 pr-4 text-center">Adoption Rate</th>
+                    <th className="border-l border-gray-200 pt-2.5 pb-2 pl-4 pr-4">Tracked Patients</th>
+                    <th className="pt-2.5 pb-2 pr-4">Deviations</th>
+                    <th className="pt-2.5 pb-2 pr-4">Compliance</th>
+                    <th className="border-l border-gray-200 pt-2.5 pb-2 pl-4 pr-4 text-center">Expected Visits / Day</th>
+                    <th className="pt-2.5 pb-2 pr-4 text-center">Actual Visits / Day</th>
+                    <th className="pt-2.5 pb-2 pr-4 text-center">Reporting Gap / Day</th>
+                    <th className="pt-2.5 pb-2 pr-4 text-center">Adoption Rate</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
