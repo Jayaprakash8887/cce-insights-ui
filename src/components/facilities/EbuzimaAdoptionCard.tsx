@@ -22,11 +22,15 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
   // Country-level roll-up = sum across ALL facilities. Reporting gap is derived from those sums
   // (expected − actual) and the rate from the same sums (actual ÷ expected), so gap and rate always
   // agree (a negative gap = over-reporting, matching a rate above 100%).
+  // No expected baseline (expected = 0): mirror the per-facility/backend rule — 100% when there IS
+  // actual reporting (fully adopted / over-reporting), and 0% only when both expected AND actual are 0.
   const summary = useMemo(() => {
     const expected = adoptionRows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
     const actual = adoptionRows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
     const gap = expected - actual;
-    const rate = expected > 0 ? Math.round((actual * 1000) / expected) / 10 : 0;
+    const rate = expected > 0
+      ? Math.round((actual * 1000) / expected) / 10
+      : (actual > 0 ? 100 : 0);
     return { expected, actual, gap, rate };
   }, [adoptionRows]);
 

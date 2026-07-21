@@ -501,9 +501,22 @@ own side menu (RI-38); the Dashboard's **eBuzima Adoption Rate** card links here
 
 ### Content
 
-Hosts the `EbuzimaAdoptionCard`: a country roll-up (Expected / Actual visits per day, Reporting Gap,
-Adoption Rate = Σ actual ÷ Σ expected) with a per-facility breakdown table (District / Facility sort,
-rate colour-coded). The global date filter scopes the period.
+Hosts the `EbuzimaAdoptionCard`: a country-level summary that **drills down** to facility detail
+(RI-43).
+
+- **Summary tiles** (top): Expected Visits / Day, Actual Visits / Day, Reporting Gap / Day, Adoption
+  Rate (Σ actual ÷ Σ expected). Click the card to expand the detail.
+- **Drill-down table** (per facility): District · Facility · Expected Visits/Day · Actual Visits/Day ·
+  Reporting Gap/Day (±, red = under-reporting) · Adoption Rate (colour-coded ≥80 / ≥50 / <50), with a
+  **District + Facility filter** (shared `DistrictFacilityFilter`) and pagination. Sorted district
+  A→Z, facility A→Z, then highest rate.
+- The global date filter scopes the period (multi-day aggregation via `getAdoptionKpisByDateRange`).
+
+**Adoption-rate rule (RI-43):** when there is **no expected baseline** (`expected = 0`), the rate is
+**100 %** if there is any actual reporting (`actual > 0`) — fully adopted / over-reporting — and **0 %**
+only when **both** expected and actual are 0. This rule now applies **consistently** to the top
+summary tile and the per-facility rows (previously the summary always showed 0 % when `expected = 0`,
+disagreeing with the drill-down).
 
 ---
 
