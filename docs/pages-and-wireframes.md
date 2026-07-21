@@ -28,7 +28,11 @@ dropdown, the Events by-facility table) are constrained to the selected district
   dropped; columns are grouped (Referrals | Compliance | e-Buzima Adoption | Status). The **Facility
   Status** Active/Inactive indicators filter the ranking; sorting is by Referrals / Compliance /
   Adoption Rate (default Referrals). Clicking a facility opens it on the Compliance page
-  (`/compliance?facility=<id>`). Top/Bottom-5 sits at the bottom.
+  (`/compliance?facility=<id>`). **Top/Bottom-5** sits at the bottom and is sliced **client-side from
+  the single district-scoped ranking** (`splitTopBottom`) — so both lists reflect the same scoped set
+  and, with ≤ 5 facilities in scope, show all of them in opposite order. (Fetching separate
+  server-side `limit=5` desc/asc lists broke under the district filter, since the limit is applied
+  before district scoping.)
 - **Adoption** page removed from the sidebar (its metrics now live in the Facility Ranking).
 - **Compliance** transactions **Due / Overdue / Missed** tiles link to the Deviations page with the
   matching filter (carrying the protocol); the **Deviations** top cards filter the Deviation List.
