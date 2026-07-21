@@ -9,8 +9,7 @@ import {
 import { PageHeader } from '../components/shared/PageHeader';
 import { ErrorAlert } from '../components/shared/ErrorAlert';
 import { KpiCard, rateTone } from '../components/shared/KpiCard';
-import { useDashboardComplianceSummary } from '../hooks/useDashboard';
-import { useFacilityActivitySummary, useAdoptionKpis } from '../hooks/useFacilities';
+import { useFacilityActivitySummary, useAdoptionKpis, useFacilityRanking } from '../hooks/useFacilities';
 import { useIngestionFunnel } from '../hooks/useIngestion';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
@@ -20,22 +19,36 @@ import { formatNumber, formatPercentage } from '../utils/formatters';
 // Events). Cards carry a supporting context line + health colour so the page still reads as an
 // insights overview rather than a single row of bare numbers.
 export default function Dashboard() {
-  const compliance = useDashboardComplianceSummary();
+  // Per-facility compliance rates (same cohort/rates the Facilities → Ranking page shows) — the
+  // national Service Compliance Rate is the simple average of these.
+  const complianceRanking = useFacilityRanking({ rankBy: 'complianceRate', order: 'desc', limit: 1000 });
   const facilities = useFacilityActivitySummary();
   const adoption = useAdoptionKpis();
   const ingestion = useIngestionFunnel();
 
-  // National adoption roll-up = Σ actual ÷ Σ expected across facilities — same formula as the
-  // Adoption card's country summary, so the tile and the Adoption page agree.
+  // National Service Compliance Rate = simple (equal-weight) average of each facility's own
+  // compliance rate — every facility counts once regardless of patient volume (facility-level
+  // aggregation, not the pooled distinct-patient ratio). Facilities with no tracked patients in the
+  // period are excluded, since their rate is undefined rather than 0.
+  const svc = useMemo(() => {
+    const rows = (complianceRanking.data?.data ?? []).filter((r) => r.totalEnrollments > 0);
+    const rate = rows.length > 0
+      ? Math.round((rows.reduce((s, r) => s + r.complianceRate, 0) / rows.length) * 10) / 10
+      : 0;
+    return { rate, facilities: rows.length };
+  }, [complianceRanking.data]);
+
+  // National eBuzima Adoption Rate = simple (equal-weight) average of each facility's own adoption
+  // rate. Facilities with no expected baseline (expectedVisitsPerDay = 0) are excluded, since their
+  // rate is undefined rather than 0.
   const adopt = useMemo(() => {
-    const rows = adoption.data ?? [];
-    const expected = rows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
-    const actual = rows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
-    const rate = expected > 0 ? Math.round((actual * 1000) / expected) / 10 : 0;
-    return { expected, actual, rate };
+    const rows = (adoption.data ?? []).filter((f) => f.expectedVisitsPerDay > 0);
+    const rate = rows.length > 0
+      ? Math.round((rows.reduce((s, f) => s + f.adoptionRate, 0) / rows.length) * 10) / 10
+      : 0;
+    return { rate, facilities: rows.length };
   }, [adoption.data]);
 
-  const p = compliance.data?.patients;
   const f = facilities.data;
   const i = ingestion.data;
 
@@ -43,7 +56,7 @@ export default function Dashboard() {
     <>
       <PageHeader title="Dashboard" description="High-level national indicators for the selected period" />
 
-      {compliance.error && <ErrorAlert error={compliance.error} />}
+      {complianceRanking.error && <ErrorAlert error={complianceRanking.error} />}
 
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">National Indicators</p>
       {/* 6-col grid: row 1 = three col-span-2 cards, row 2 = two col-span-3 cards — both rows fill
@@ -52,15 +65,15 @@ export default function Dashboard() {
         <KpiCard
           className="lg:col-span-2"
           title="Service Compliance Rate"
-          value={formatPercentage(p?.complianceRate ?? 0)}
-          tone={rateTone(p?.complianceRate)}
-          context={p ? `${formatNumber(p.compliantPatients)} of ${formatNumber(p.trackedPatients)} patients compliant` : undefined}
+          value={formatPercentage(svc.rate)}
+          tone={rateTone(svc.rate)}
+          context={complianceRanking.data ? `avg across ${formatNumber(svc.facilities)} ${svc.facilities === 1 ? 'facility' : 'facilities'}` : undefined}
           icon={ClipboardDocumentCheckIcon}
           iconClass="bg-emerald-50 text-emerald-600"
           linkTo="/compliance"
           linkLabel="View compliance"
-          description="Compliant patients as a percentage of tracked patients."
-          loading={compliance.isLoading}
+          description="Simple average of each facility's compliance rate (facilities with tracked patients)."
+          loading={complianceRanking.isLoading}
         />
         <KpiCard
           className="lg:col-span-2"
@@ -80,12 +93,12 @@ export default function Dashboard() {
           title="eBuzima Adoption Rate"
           value={formatPercentage(adopt.rate)}
           tone={rateTone(adopt.rate)}
-          context={adoption.data ? `${formatNumber(adopt.actual)} actual vs ${formatNumber(adopt.expected)} expected / day` : undefined}
+          context={adoption.data ? `avg across ${formatNumber(adopt.facilities)} ${adopt.facilities === 1 ? 'facility' : 'facilities'}` : undefined}
           icon={ArrowTrendingUpIcon}
           iconClass="bg-violet-50 text-violet-600"
           linkTo="/adoption"
           linkLabel="View adoption"
-          description="Actual vs. expected daily reporting across facilities."
+          description="Simple average of each facility's daily reporting rate (facilities with an expected baseline)."
           loading={adoption.isLoading}
         />
         <KpiCard
