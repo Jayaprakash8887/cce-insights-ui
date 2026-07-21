@@ -7,6 +7,7 @@ import type {
 export function getEventSummary(params?: {
   facilityId?: string;
   source?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<EventVolumeSummary> {
@@ -18,6 +19,7 @@ export function getEventTrends(params?: {
   resourceType?: string;
   facilityId?: string;
   source?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<EventVolumeTrend> {
@@ -27,6 +29,7 @@ export function getEventTrends(params?: {
 export function getEventsByResourceType(params?: {
   facilityId?: string;
   source?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<ResourceTypeCount[]> {
@@ -35,6 +38,7 @@ export function getEventsByResourceType(params?: {
 
 export function getEventsByFacility(params?: {
   resourceType?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -42,6 +46,7 @@ export function getEventsByFacility(params?: {
 }) {
   return apiGetPaginated<FacilityEventCount>('/events/by-facility', {
     resourceType: params?.resourceType,
+    district: params?.district,
     startDate: params?.startDate,
     endDate: params?.endDate,
     limit: params?.limit?.toString(),
