@@ -74,7 +74,7 @@ export function PatientReferralCards({ className }: { className?: string }) {
     >
       {received.error && <ErrorAlert error={received.error} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Created Referrals"
           value="—"
@@ -92,6 +92,11 @@ export function PatientReferralCards({ className }: { className?: string }) {
           title="Failed Referrals"
           value="—"
           description="Referrals that failed to complete. Definition pending — indicator placeholder."
+        />
+        <MetricCard
+          title="Referral Rate"
+          value="—"
+          description="Referral rate. Definition pending — indicator placeholder (depends on Created / Failed definitions)."
         />
       </div>
 
