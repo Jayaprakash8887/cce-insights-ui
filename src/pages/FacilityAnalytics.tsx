@@ -14,9 +14,11 @@ export default function FacilityAnalytics() {
 
       <FacilityActivityCards className="mb-6" value={statusFilter} onChange={setStatusFilter} />
 
-      <FacilityHighlightsCard className="mb-6" />
+      <div className="mb-6">
+        <FacilityRankingCard statusFilter={statusFilter} />
+      </div>
 
-      <FacilityRankingCard statusFilter={statusFilter} />
+      <FacilityHighlightsCard />
     </>
   );
 }
