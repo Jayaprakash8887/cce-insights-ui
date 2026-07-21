@@ -39,10 +39,12 @@ export default function Dashboard() {
   }, [complianceRanking.data]);
 
   // National eBuzima Adoption Rate = simple (equal-weight) average of each facility's own adoption
-  // rate. Facilities with no expected baseline (expectedVisitsPerDay = 0) are excluded, since their
-  // rate is undefined rather than 0.
+  // rate, exactly as shown in the Adoption breakdown table — every in-scope facility counts once.
+  // (We do NOT drop facilities with a zero expected baseline: the backend still gives them a defined
+  // rate — 0% when not reporting, 100% when reporting above a zero baseline — so excluding them would
+  // wipe out the whole average in environments where no baseline is configured.)
   const adopt = useMemo(() => {
-    const rows = (adoption.data ?? []).filter((f) => f.expectedVisitsPerDay > 0);
+    const rows = adoption.data ?? [];
     const rate = rows.length > 0
       ? Math.round((rows.reduce((s, f) => s + f.adoptionRate, 0) / rows.length) * 10) / 10
       : 0;
@@ -98,7 +100,7 @@ export default function Dashboard() {
           iconClass="bg-violet-50 text-violet-600"
           linkTo="/adoption"
           linkLabel="View adoption"
-          description="Simple average of each facility's daily reporting rate (facilities with an expected baseline)."
+          description="Simple average of each facility's daily reporting rate, across all in-scope facilities."
           loading={adoption.isLoading}
         />
         <KpiCard
