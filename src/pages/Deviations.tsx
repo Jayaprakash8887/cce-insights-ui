@@ -19,7 +19,8 @@ import { INTERVAL_OPTIONS } from '../config';
 
 export default function Deviations() {
   const [searchParams] = useSearchParams();
-  const [protocolId, setProtocolId] = useState('');
+  // Carry the protocol selection forward when deep-linked from the Compliance transactions.
+  const [protocolId, setProtocolId] = useState(() => searchParams.get('protocol') ?? '');
   const [interval, setInterval] = useState('weekly');
   // Pre-select the deviation type when deep-linked from the Compliance transactions (?type=OVERDUE|MISSED|...).
   const [deviationType, setDeviationType] = useState(() => {

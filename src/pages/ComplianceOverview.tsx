@@ -170,13 +170,15 @@ export default function ComplianceOverview() {
                   const missed = data.stepMetrics.missed ?? 0;
                   const pending = data.stepMetrics.pending ?? 0;
                   const totalSteps = data.stepMetrics.totalSteps ?? 0;
+                  // Carry the current protocol selection forward to the Deviations page.
+                  const protoQ = protocolId ? `protocol=${encodeURIComponent(protocolId)}` : '';
 
                   const tiles = [
                     { key: 'total', label: 'Total Steps', value: totalSteps, denom: totalSteps, color: 'bg-gray-500', text: 'text-gray-800', bg: 'bg-gray-50', desc: 'Total applicable steps across all tracked patients.' },
                     { key: 'completed', label: 'Completed', value: completed, denom: totalSteps, color: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', sub: { onTime, late }, desc: 'Steps that have been completed (on time or late).' },
-                    { key: 'due', label: 'Due', value: due, denom: totalSteps, color: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', desc: 'Steps that are currently due and within the allowed window. Click to open the Deviations page.', nav: '/deviations' },
-                    { key: 'overdue', label: 'Overdue', value: overdue, denom: totalSteps, color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', desc: 'Steps that have exceeded their due date but are not yet missed. Click to see the overdue deviations.', nav: '/deviations?type=OVERDUE' },
-                    { key: 'missed', label: 'Missed', value: missed, denom: totalSteps, color: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', desc: 'Steps that were never completed within the allowed window. Click to see the missed deviations.', nav: '/deviations?type=MISSED' },
+                    { key: 'due', label: 'Due', value: due, denom: totalSteps, color: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', desc: 'Steps that are currently due and within the allowed window. Click to open the Deviations page.', nav: `/deviations${protoQ ? `?${protoQ}` : ''}` },
+                    { key: 'overdue', label: 'Overdue', value: overdue, denom: totalSteps, color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', desc: 'Steps that have exceeded their due date but are not yet missed. Click to see the overdue deviations.', nav: `/deviations?type=OVERDUE${protoQ ? `&${protoQ}` : ''}` },
+                    { key: 'missed', label: 'Missed', value: missed, denom: totalSteps, color: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', desc: 'Steps that were never completed within the allowed window. Click to see the missed deviations.', nav: `/deviations?type=MISSED${protoQ ? `&${protoQ}` : ''}` },
                     { key: 'pending', label: 'Pending', value: pending, denom: totalSteps, color: 'bg-gray-400', text: 'text-gray-700', bg: 'bg-gray-100', desc: 'Steps not yet triggered — waiting for a preceding step to complete.' },
                   ];
 
