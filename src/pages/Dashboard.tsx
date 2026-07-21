@@ -4,27 +4,25 @@ import {
   BuildingOffice2Icon,
   ArrowTrendingUpIcon,
   ArrowsRightLeftIcon,
-  InboxArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import { PageHeader } from '../components/shared/PageHeader';
 import { ErrorAlert } from '../components/shared/ErrorAlert';
 import { KpiCard, rateTone } from '../components/shared/KpiCard';
 import { useFacilityActivitySummary, useAdoptionKpis, useFacilityRanking } from '../hooks/useFacilities';
-import { useIngestionFunnel } from '../hooks/useIngestion';
+import { usePatientReferralsReceived } from '../hooks/usePatients';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
-// RI-38 — the Dashboard is only high-level NATIONAL indicators. Each card links into the side
-// menu where its detail lives; per-facility / per-protocol breakdowns and trend charts were moved
-// to those pages (Compliance, Facilities, the new Adoption menu, Patients, Ingestion, Deviations,
-// Events). Cards carry a supporting context line + health colour so the page still reads as an
-// insights overview rather than a single row of bare numbers.
+// RI-38 — the Dashboard is only high-level NATIONAL indicators. Every card links into the Facilities
+// page, where the per-facility breakdowns live. Cards carry a supporting context line + health colour
+// so the page still reads as an insights overview rather than a single row of bare numbers.
 export default function Dashboard() {
   // Per-facility compliance rates (same cohort/rates the Facilities → Ranking page shows) — the
   // national Service Compliance Rate is the simple average of these.
   const complianceRanking = useFacilityRanking({ rankBy: 'complianceRate', order: 'desc', limit: 1000 });
   const facilities = useFacilityActivitySummary();
   const adoption = useAdoptionKpis();
-  const ingestion = useIngestionFunnel();
+  // Total Referral Count = the same "Referrals Received by HIE" list the Patients page shows.
+  const referrals = usePatientReferralsReceived();
 
   // National Service Compliance Rate = simple (equal-weight) average of each facility's own
   // compliance rate across ALL in-scope facilities (facility-level aggregation, not the pooled
@@ -52,7 +50,7 @@ export default function Dashboard() {
   }, [adoption.data]);
 
   const f = facilities.data;
-  const i = ingestion.data;
+  const referralCount = referrals.data?.length ?? 0;
 
   return (
     <>
@@ -61,24 +59,20 @@ export default function Dashboard() {
       {complianceRanking.error && <ErrorAlert error={complianceRanking.error} />}
 
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">National Indicators</p>
-      {/* 6-col grid: row 1 = three col-span-2 cards, row 2 = two col-span-3 cards — both rows fill
-          the full width, so the odd (5) count has no orphaned gap. */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          className="lg:col-span-2"
           title="Service Compliance Rate"
           value={formatPercentage(svc.rate)}
           tone={rateTone(svc.rate)}
           context={complianceRanking.data ? `avg across ${formatNumber(svc.facilities)} ${svc.facilities === 1 ? 'facility' : 'facilities'}` : undefined}
           icon={ClipboardDocumentCheckIcon}
           iconClass="bg-emerald-50 text-emerald-600"
-          linkTo="/compliance"
-          linkLabel="View compliance"
+          linkTo="/facilities"
+          linkLabel="View facilities"
           description="Simple average of each facility's compliance rate, across all in-scope facilities."
           loading={complianceRanking.isLoading}
         />
         <KpiCard
-          className="lg:col-span-2"
           title="Total Facilities"
           value={formatNumber(f?.totalInScope ?? 0)}
           tone="neutral"
@@ -91,42 +85,28 @@ export default function Dashboard() {
           loading={facilities.isLoading}
         />
         <KpiCard
-          className="lg:col-span-2"
           title="eBuzima Adoption Rate"
           value={formatPercentage(adopt.rate)}
           tone={rateTone(adopt.rate)}
           context={adoption.data ? `avg across ${formatNumber(adopt.facilities)} ${adopt.facilities === 1 ? 'facility' : 'facilities'}` : undefined}
           icon={ArrowTrendingUpIcon}
           iconClass="bg-violet-50 text-violet-600"
-          linkTo="/adoption"
-          linkLabel="View adoption"
+          linkTo="/facilities"
+          linkLabel="View facilities"
           description="Simple average of each facility's daily reporting rate, across all in-scope facilities."
           loading={adoption.isLoading}
         />
         <KpiCard
-          className="lg:col-span-3"
-          title="Referral Rate"
-          value={formatPercentage(0)}
+          title="Total Referral Count"
+          value={formatNumber(referralCount)}
           tone="neutral"
-          context="Definition pending"
+          context={referrals.data ? 'referrals received by HIE' : undefined}
           icon={ArrowsRightLeftIcon}
           iconClass="bg-amber-50 text-amber-600"
-          linkTo="/compliance/patients"
-          linkLabel="View patients"
-          description="Referral Rate definition is being finalised — shown as 0% for now."
-        />
-        <KpiCard
-          className="lg:col-span-3"
-          title="Ingestion Rate"
-          value={formatPercentage(i?.acceptanceRate ?? 0)}
-          tone={rateTone(i?.acceptanceRate)}
-          context={i ? `${formatNumber(i.accepted)} of ${formatNumber(i.totalReceived)} events accepted` : undefined}
-          icon={InboxArrowDownIcon}
-          iconClass="bg-cyan-50 text-cyan-600"
-          linkTo="/ingestion"
-          linkLabel="View ingestion"
-          description="Events accepted as a percentage of events received by the ingestion pipeline."
-          loading={ingestion.isLoading}
+          linkTo="/facilities"
+          linkLabel="View facilities"
+          description="Total referrals received by HIE in the selected period — the same figure as the Patients page 'Referrals Received by HIE'."
+          loading={referrals.isLoading}
         />
       </div>
     </>
