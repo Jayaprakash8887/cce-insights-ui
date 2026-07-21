@@ -13,7 +13,6 @@ const PatientDetail = lazy(() => import('./pages/PatientDetail'));
 const Deviations = lazy(() => import('./pages/Deviations'));
 const EventVolume = lazy(() => import('./pages/EventVolume'));
 const FacilityAnalytics = lazy(() => import('./pages/FacilityAnalytics'));
-const Adoption = lazy(() => import('./pages/Adoption'));
 const PractitionerAnalytics = lazy(() => import('./pages/PractitionerAnalytics'));
 const IngestionPipeline = lazy(() => import('./pages/IngestionPipeline'));
 const Exports = lazy(() => import('./pages/Exports'));
@@ -49,7 +48,6 @@ export function App() {
               <Route path="/deviations" element={<Deviations />} />
               <Route path="/events" element={<EventVolume />} />
               <Route path="/facilities" element={<FacilityAnalytics />} />
-              <Route path="/adoption" element={<Adoption />} />
               <Route path="/practitioners" element={<PractitionerAnalytics />} />
               <Route path="/ingestion" element={<IngestionPipeline />} />
               <Route path="/intelligence" element={<Intelligence />} />
