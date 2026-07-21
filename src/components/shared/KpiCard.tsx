@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 
-type Tone = 'good' | 'warn' | 'bad' | 'neutral';
+export type Tone = 'good' | 'warn' | 'bad' | 'neutral';
 
 interface KpiCardProps {
   title: string;
