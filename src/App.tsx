@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
@@ -20,12 +20,16 @@ const Exports = lazy(() => import('./pages/Exports'));
 const Intelligence = lazy(() => import('./pages/Intelligence'));
 
 export function App() {
+  // The global District filter scopes clinical-event metrics; it doesn't apply to the Ingestion
+  // pipeline view, so hide it there.
+  const { pathname } = useLocation();
+  const showDistrict = !pathname.startsWith('/ingestion');
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="ml-56 flex-1">
         <header className="sticky top-0 z-20 flex items-center justify-end gap-4 border-b border-gray-200 bg-white px-6 py-2.5">
-          <DistrictFilter />
+          {showDistrict && <DistrictFilter />}
           <DateRangeFilter />
           {authEnabled && (
             <div className="flex items-center gap-3 border-l border-gray-200 pl-4">
