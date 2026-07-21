@@ -134,18 +134,23 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
+                  {/* Grouped header: Referrals | Compliance | e-Buzima Adoption | Status */}
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Rank</th>
+                    <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Facility</th>
+                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4" rowSpan={2}>Referrals</th>
+                    <th className="border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
+                    <th className="border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
+                    <th className="border-b border-l border-gray-200 pb-1 pl-4" rowSpan={2}>Status</th>
+                  </tr>
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
-                    <th className="pb-2 pr-4">Rank</th>
-                    <th className="pb-2 pr-4">Facility</th>
-                    <th className="pb-2 pr-4">Referrals</th>
-                    <th className="pb-2 pr-4">Tracked Patients</th>
-                    <th className="pb-2 pr-4">Compliance</th>
+                    <th className="border-l border-gray-200 pb-2 pl-4 pr-4">Tracked Patients</th>
                     <th className="pb-2 pr-4">Deviations</th>
-                    <th className="pb-2 pr-4 text-center">Expected Visits / Day</th>
+                    <th className="pb-2 pr-4">Compliance</th>
+                    <th className="border-l border-gray-200 pb-2 pl-4 pr-4 text-center">Expected Visits / Day</th>
                     <th className="pb-2 pr-4 text-center">Actual Visits / Day</th>
                     <th className="pb-2 pr-4 text-center">Reporting Gap / Day</th>
                     <th className="pb-2 pr-4 text-center">Adoption Rate</th>
-                    <th className="pb-2">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -167,8 +172,9 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                             {formatFacilityDisplayName(f, duplicateFacilityNames)}
                           </Link>
                         </td>
-                        <td className="py-2 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
-                        <td className="py-2 pr-4">{formatNumber(f.totalEnrollments)}</td>
+                        <td className="border-l border-gray-200 py-2 pl-4 pr-4 tabular-nums">{formatNumber(referralByFacility.get(f.facilityId) ?? 0)}</td>
+                        <td className="border-l border-gray-200 py-2 pl-4 pr-4">{formatNumber(f.totalEnrollments)}</td>
+                        <td className="py-2 pr-4">{formatNumber(f.activeDeviations)}</td>
                         <td className="py-2 pr-4">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
                             f.complianceRate >= 80 ? 'bg-green-50 text-green-700' :
@@ -178,14 +184,13 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                             {formatPercentage(f.complianceRate)}
                           </span>
                         </td>
-                        <td className="py-2 pr-4">{formatNumber(f.activeDeviations)}</td>
-                        <td className="py-2 pr-4 text-center tabular-nums text-gray-600">{formatNumber(a?.expectedVisitsPerDay ?? 0)}</td>
+                        <td className="border-l border-gray-200 py-2 pl-4 pr-4 text-center tabular-nums text-gray-600">{formatNumber(a?.expectedVisitsPerDay ?? 0)}</td>
                         <td className="py-2 pr-4 text-center tabular-nums">{formatNumber(a?.actualVisitsPerDay ?? 0)}</td>
                         <td className={`py-2 pr-4 text-center font-medium tabular-nums ${gap > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           {gap > 0 ? `−${formatNumber(gap)}` : `+${formatNumber(Math.abs(gap))}`}
                         </td>
                         <td className={`py-2 pr-4 text-center font-semibold ${rateColor}`}>{formatPercentage(adoptionRate, 2)}</td>
-                        <td className="py-2">
+                        <td className="border-l border-gray-200 py-2 pl-4">
                           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
                             active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                           }`}>
