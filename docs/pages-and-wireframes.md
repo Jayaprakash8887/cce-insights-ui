@@ -227,13 +227,28 @@ Notes:
 ## 4. Patient List
 
 **Route:** `/compliance/patients`  
-**Purpose:** Browse patients by compliance category (Compliant / Non-Compliant only). Cohort can be filtered by enrollment date or step activity date.
+**Purpose:** Browse patients by compliance category (Compliant / Non-Compliant only), and (RI-44) a **Referrals** indicator strip above the list. Cohort can be filtered by enrollment date or step activity date.
 
 ### APIs Used
 
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /v1/insights/protocols/{id}/patients` | Patient list with compliance status (`status`, `patientId`, `dateFilterMode`, paging params) |
+| `GET /v1/insights/patients/referrals/received-by-hie` | **RI-44 Referrals** — patients with a referral received by HIE (drill-down list; date-scoped by `event_time`) |
+| `GET /v1/insights/facilities/ranking` (limit 1000) | Facility catalog (id/name/district) for the referral drill-down's District/Facility filter |
+
+### Referrals indicators (RI-44)
+
+A `Referrals` card sits above the Patient List with four metrics:
+
+| Metric | State |
+|--------|-------|
+| **Created Referrals** | placeholder (`—`, definition pending) |
+| **Referrals Received by HIE** | **live** — distinct patients with a referral received by HIE in the period; **click to drill down** |
+| **Failed Referrals** | placeholder (`—`, definition pending) |
+| **Referral Rate** | placeholder (`—`, definition pending) |
+
+The **Referrals Received by HIE** drill-down lists each patient (→ patient detail) with facility · referral date, and has its **own** District + Facility filter (shared `DistrictFacilityFilter`, same as the Facilities page) — the card value stays the unfiltered total while the drill-down count/list reflect the filter. District is resolved per patient via the facility catalog.
 
 ### Wireframe
 

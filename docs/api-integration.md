@@ -747,6 +747,15 @@ export function getPatientProtocolTracking(patientId: string): Promise<ProtocolT
   return apiGet(`/patients/${encodeURIComponent(patientId)}/protocol-tracking`);
 }
 
+// RI-44 — patients behind the "Referrals Received by HIE" indicator (event_time-scoped).
+// PatientReferral: { patientId, facilityId, facilityName, lastReferral, referralCount, matchedCount }
+export function getReferralsReceivedByHie(filters?: GlobalFilters): Promise<PatientReferral[]> {
+  return apiGet('/patients/referrals/received-by-hie', {
+    startDate: filters?.startDate,
+    endDate: filters?.endDate,
+  });
+}
+
 export function getPatientProtocolTrackingDetail(
   patientId: string,
   protocolInstanceId: string,
