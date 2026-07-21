@@ -96,7 +96,7 @@ export default function Dashboard() {
     {
       icon: ArrowsRightLeftIcon,
       iconClass: 'bg-amber-50 text-amber-600',
-      title: 'Total Referral Count',
+      title: 'Total Referrals',
       value: formatNumber(referrals.data?.length ?? 0),
       tone: 'neutral',
       context: 'referrals received by HIE',
