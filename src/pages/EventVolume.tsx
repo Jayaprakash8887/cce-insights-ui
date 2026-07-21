@@ -11,6 +11,7 @@ import {
   useEventTrends, useEventsByResourceType, useEventsByFacility, useEventSummary,
 } from '../hooks/useEventVolume';
 import { useFacilityLookup } from '../hooks/useLookups';
+import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { formatNumber } from '../utils/formatters';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../utils/facilityDisplay';
 import { INTERVAL_OPTIONS } from '../config';
@@ -30,6 +31,13 @@ export default function EventVolume() {
   const byResourceType = useEventsByResourceType();
   const byFacility = useEventsByFacility();
   const facilities = useFacilityLookup();
+  const { district } = useGlobalFilters();
+  // Facilities in scope for the global district (the by-facility table merges these so zero-event
+  // facilities still appear — without this it would re-introduce out-of-district facilities).
+  const scopedFacilities = useMemo(
+    () => (facilities.data ?? []).filter((f) => !district || f.district === district),
+    [facilities.data, district],
+  );
 
   // All header tiles (incl. Pipeline Loss) come from /events/summary — every metric is
   // date-filtered by clinical event_time over the same event set, so the rates reconcile.
@@ -51,18 +59,21 @@ export default function EventVolume() {
     }
     const merged: FacilityEventCount[] = [];
     const seen = new Set<string>();
-    for (const fac of facilities.data ?? []) {
+    for (const fac of scopedFacilities) {
       const row = byId.get(fac.id);
       merged.push(row ?? { facilityId: fac.id, totalEvents: 0, byResourceType: [] });
       seen.add(fac.id);
     }
-    // Defensive: include any API row whose facility id isn't in the reference (rare,
-    // typically only for legacy/test data) so it's still visible.
-    for (const row of byFacility.data?.data ?? []) {
-      if (!seen.has(row.facilityId)) merged.push(row);
+    // Defensive: include any API row whose facility id isn't in the (scoped) reference — but when a
+    // district is selected, don't re-introduce out-of-district facilities, so only add unseen rows
+    // when no district is active.
+    if (!district) {
+      for (const row of byFacility.data?.data ?? []) {
+        if (!seen.has(row.facilityId)) merged.push(row);
+      }
     }
     return merged.sort((a, b) => b.totalEvents - a.totalEvents);
-  }, [byFacility.data, facilities.data]);
+  }, [byFacility.data, scopedFacilities, district]);
 
   const facilityNameById = useMemo(() => {
     const map = new Map<string, string>();
