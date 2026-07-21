@@ -25,7 +25,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: FacilityStatusFilter }) {
-  const [sortKey, setSortKey] = useState<SortKey>('complianceRate');
+  const [sortKey, setSortKey] = useState<SortKey>('referrals');
   const [order, setOrder] = useState<SortOrder>('desc');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
