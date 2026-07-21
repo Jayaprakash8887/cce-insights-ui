@@ -11,6 +11,7 @@ export function getReferralsReceivedByHie(filters?: GlobalFilters): Promise<Pati
   return apiGet('/patients/referrals/received-by-hie', {
     startDate: filters?.startDate,
     endDate: filters?.endDate,
+    district: filters?.district,
   });
 }
 

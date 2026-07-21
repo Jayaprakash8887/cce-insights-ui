@@ -32,6 +32,7 @@ export interface GlobalFilters {
   startDate?: string;
   endDate?: string;
   facilityId?: string;
+  district?: string;
 }
 
 // ─── Compliance Summaries ────────────────────────────────────

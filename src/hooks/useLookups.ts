@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getProtocols, getFacilities, getPractitioners, getSources, getPatients } from '../api/lookups';
+import { getProtocols, getFacilities, getDistricts, getPractitioners, getSources, getPatients } from '../api/lookups';
 
 export function useProtocols() {
   return useQuery({
@@ -13,6 +13,14 @@ export function useFacilityLookup() {
   return useQuery({
     queryKey: ['lookups', 'facilities'],
     queryFn: getFacilities,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useDistricts() {
+  return useQuery({
+    queryKey: ['lookups', 'districts'],
+    queryFn: getDistricts,
     staleTime: 5 * 60 * 1000,
   });
 }

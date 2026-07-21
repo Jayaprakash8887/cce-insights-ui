@@ -8,8 +8,10 @@ export interface FilterContextValue {
   startDate: string;
   endDate: string;
   facilityId: string | undefined;
+  district: string | undefined;
   setDateRange: (start: string, end: string) => void;
   setFacilityId: (id: string | undefined) => void;
+  setDistrict: (district: string | undefined) => void;
 }
 
 const defaults = getDefaultDateRange(defaultDays);
@@ -18,8 +20,10 @@ export const FilterContext = createContext<FilterContextValue>({
   startDate: defaults.startDate,
   endDate: defaults.endDate,
   facilityId: undefined,
+  district: undefined,
   setDateRange: () => {},
   setFacilityId: () => {},
+  setDistrict: () => {},
 });
 
 export function FilterProvider({ children }: { children: ReactNode }) {
@@ -33,6 +37,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   );
   const [facilityId, setFacilityIdState] = useState<string | undefined>(
     searchParams.get('facilityId') || undefined,
+  );
+  const [district, setDistrictState] = useState<string | undefined>(
+    searchParams.get('district') || undefined,
   );
 
   const setDateRange = useCallback(
@@ -60,8 +67,20 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     [setSearchParams],
   );
 
+  const setDistrict = useCallback(
+    (d: string | undefined) => {
+      setDistrictState(d);
+      setSearchParams((prev) => {
+        if (d) prev.set('district', d);
+        else prev.delete('district');
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
+
   return (
-    <FilterContext.Provider value={{ startDate, endDate, facilityId, setDateRange, setFacilityId }}>
+    <FilterContext.Provider value={{ startDate, endDate, facilityId, district, setDateRange, setFacilityId, setDistrict }}>
       {children}
     </FilterContext.Provider>
   );

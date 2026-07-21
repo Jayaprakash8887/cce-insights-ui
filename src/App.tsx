@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
 import { DateRangeFilter } from './components/shared/DateRangeFilter';
+import { DistrictFilter } from './components/shared/DistrictFilter';
 import { authEnabled, logout } from './auth/keycloak';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -24,6 +25,7 @@ export function App() {
       <Sidebar />
       <div className="ml-56 flex-1">
         <header className="sticky top-0 z-20 flex items-center justify-end gap-4 border-b border-gray-200 bg-white px-6 py-2.5">
+          <DistrictFilter />
           <DateRangeFilter />
           {authEnabled && (
             <div className="flex items-center gap-3 border-l border-gray-200 pl-4">

@@ -9,5 +9,6 @@ export function useGlobalFilters(): GlobalFilters {
     startDate: toStartOfDayISO(ctx.startDate),
     endDate: toEndOfDayISO(ctx.endDate),
     facilityId: ctx.facilityId,
-  }), [ctx.startDate, ctx.endDate, ctx.facilityId]);
+    district: ctx.district,
+  }), [ctx.startDate, ctx.endDate, ctx.facilityId, ctx.district]);
 }

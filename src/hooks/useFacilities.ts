@@ -14,6 +14,7 @@ export function useFacilityActivitySummary() {
       startDate: filters.startDate,
       endDate: filters.endDate,
       facilityId: filters.facilityId,
+      district: filters.district,
     }),
     refetchInterval: Number(import.meta.env.VITE_POLLING_INTERVAL || 60000),
   });
@@ -22,10 +23,11 @@ export function useFacilityActivitySummary() {
 export function useFacilityActivityDetail() {
   const filters = useGlobalFilters();
   return useQuery({
-    queryKey: ['facilities', 'activity-detail', filters.startDate, filters.endDate],
+    queryKey: ['facilities', 'activity-detail', filters.startDate, filters.endDate, filters.district],
     queryFn: () => getFacilityActivityDetail({
       startDate: filters.startDate,
       endDate: filters.endDate,
+      district: filters.district,
     }),
     refetchInterval: Number(import.meta.env.VITE_POLLING_INTERVAL || 60000),
   });
@@ -47,6 +49,7 @@ export function useAdoptionKpis() {
       startDate: filters.startDate,
       endDate: filters.endDate,
       facilityId: filters.facilityId,
+      district: filters.district,
     }),
   });
 }

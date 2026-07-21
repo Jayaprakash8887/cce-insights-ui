@@ -8,11 +8,13 @@ export function getFacilityActivitySummary(params?: {
   startDate?: string;
   endDate?: string;
   facilityId?: string;
+  district?: string;
 }): Promise<FacilityActivitySummary> {
   return apiGet('/facilities/activity-summary', {
     startDate: params?.startDate ? params.startDate.substring(0, 10) : undefined,
     endDate:   params?.endDate   ? params.endDate.substring(0, 10)   : undefined,
     facilityId: params?.facilityId,
+    district: params?.district,
   });
 }
 
@@ -23,10 +25,12 @@ export function getFacilityReference(): Promise<FacilityReference[]> {
 export function getFacilityActivityDetail(params?: {
   startDate?: string;
   endDate?: string;
+  district?: string;
 }): Promise<FacilityActivityItem[]> {
   return apiGet('/facilities/activity-detail', {
     startDate: params?.startDate ? params.startDate.substring(0, 10) : undefined,
     endDate:   params?.endDate   ? params.endDate.substring(0, 10)   : undefined,
+    district: params?.district,
   });
 }
 
@@ -36,17 +40,20 @@ export function getAdoptionKpis(params?: {
   startDate?: string;
   endDate?: string;
   facilityId?: string;
+  district?: string;
 }): Promise<AdoptionKpi[]> {
   return apiGet('/facilities/adoption', {
     startDate: params?.startDate ? params.startDate.substring(0, 10) : undefined,
     endDate:   params?.endDate   ? params.endDate.substring(0, 10)   : undefined,
     facilityId: params?.facilityId,
+    district: params?.district,
   });
 }
 
 export function getFacilityRanking(params?: {
   protocolDefinitionId?: string;
   facilityId?: string;
+  district?: string;
   rankBy?: RankBy;
   order?: SortOrder;
   startDate?: string;
@@ -57,6 +64,7 @@ export function getFacilityRanking(params?: {
   return apiGetPaginated<FacilityRanking>('/facilities/ranking', {
     protocolDefinitionId: params?.protocolDefinitionId,
     facilityId: params?.facilityId,
+    district: params?.district,
     rankBy: params?.rankBy,
     order: params?.order,
     startDate: params?.startDate ? params.startDate.substring(0, 10) : undefined,
