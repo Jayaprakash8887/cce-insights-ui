@@ -155,14 +155,17 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  {/* Grouped header: Referrals | Compliance | e-Buzima Adoption | Status */}
+                  {/* Grouped header: Referrals | Compliance | e-Buzima Adoption | Status.
+                      Identity columns (Rank/Facility/Referrals/Status) span both rows and are
+                      bottom-aligned + styled like the sub-headers, so every column label lands on
+                      one line while the group labels float above their sub-columns. */}
                   <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                    <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Rank</th>
-                    <th className="border-b border-gray-200 pb-1 pr-4" rowSpan={2}>Facility</th>
-                    <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4" rowSpan={2}>Referrals</th>
+                    <th className="border-b border-gray-200 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Rank</th>
+                    <th className="border-b border-gray-200 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Facility</th>
+                    <th className="border-b border-l border-gray-200 pb-2 pl-4 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Referrals</th>
                     <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
                     <th className="border-b border-l border-gray-200 pb-1 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
-                    <th className="border-b border-l border-gray-200 pb-1 pl-4" rowSpan={2}>Status</th>
+                    <th className="border-b border-l border-gray-200 pb-2 pl-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Status</th>
                   </tr>
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="border-l border-gray-200 pb-2 pl-4 pr-4">Tracked Patients</th>
