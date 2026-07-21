@@ -27,11 +27,11 @@ export default function Dashboard() {
   const ingestion = useIngestionFunnel();
 
   // National Service Compliance Rate = simple (equal-weight) average of each facility's own
-  // compliance rate — every facility counts once regardless of patient volume (facility-level
-  // aggregation, not the pooled distinct-patient ratio). Facilities with no tracked patients in the
-  // period are excluded, since their rate is undefined rather than 0.
+  // compliance rate across ALL in-scope facilities (facility-level aggregation, not the pooled
+  // distinct-patient ratio). Every facility counts once and the divisor is the full facility count —
+  // a facility with no tracked patients contributes 0%, same treatment as the Adoption Rate tile.
   const svc = useMemo(() => {
-    const rows = (complianceRanking.data?.data ?? []).filter((r) => r.totalEnrollments > 0);
+    const rows = complianceRanking.data?.data ?? [];
     const rate = rows.length > 0
       ? Math.round((rows.reduce((s, r) => s + r.complianceRate, 0) / rows.length) * 10) / 10
       : 0;
@@ -74,7 +74,7 @@ export default function Dashboard() {
           iconClass="bg-emerald-50 text-emerald-600"
           linkTo="/compliance"
           linkLabel="View compliance"
-          description="Simple average of each facility's compliance rate (facilities with tracked patients)."
+          description="Simple average of each facility's compliance rate, across all in-scope facilities."
           loading={complianceRanking.isLoading}
         />
         <KpiCard
