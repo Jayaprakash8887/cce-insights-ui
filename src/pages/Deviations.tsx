@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ProtocolFilter } from '../components/shared/ProtocolFilter';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '../components/shared/PageHeader';
@@ -18,9 +18,14 @@ import { formatDate } from '../utils/dates';
 import { INTERVAL_OPTIONS } from '../config';
 
 export default function Deviations() {
+  const [searchParams] = useSearchParams();
   const [protocolId, setProtocolId] = useState('');
   const [interval, setInterval] = useState('weekly');
-  const [deviationType, setDeviationType] = useState('');
+  // Pre-select the deviation type when deep-linked from the Compliance transactions (?type=OVERDUE|MISSED|...).
+  const [deviationType, setDeviationType] = useState(() => {
+    const t = searchParams.get('type');
+    return t && ['OVERDUE', 'MISSED', 'ORDER_VIOLATION'].includes(t) ? t : '';
+  });
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -88,10 +93,10 @@ export default function Deviations() {
 
       {deviationKpis.isLoading ? <LoadingSpinner /> : deviationKpis.error ? <ErrorAlert error={deviationKpis.error} /> : deviationKpis.data ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <MetricCard title="Total Deviations" value={formatNumber(deviationKpis.data.totalDeviations)} description="Distinct deviations detected during the selected period (counted from the deviation table, no double-counting across snapshot days)." />
-          <MetricCard title="Overdue" value={formatNumber(deviationKpis.data.overdueCount)} description="Steps not completed by the due date and still within the resolution window." bgColor="bg-amber-50" />
-          <MetricCard title="Missed" value={formatNumber(deviationKpis.data.missedCount)} description="Steps that passed the maximum resolution window — now permanently missed." bgColor="bg-red-50" />
-          <MetricCard title="Order Violation" value={formatNumber(deviationKpis.data.orderViolationCount)} description="Steps completed out of the expected sequence order defined in the protocol." bgColor="bg-purple-50" />
+          <MetricCard title="Total Deviations" value={formatNumber(deviationKpis.data.totalDeviations)} description="Distinct deviations detected during the selected period (counted from the deviation table, no double-counting across snapshot days). Click to clear the Deviation List filter." onClick={() => { setDeviationType(''); setPage(1); }} selected={deviationType === ''} />
+          <MetricCard title="Overdue" value={formatNumber(deviationKpis.data.overdueCount)} description="Steps not completed by the due date and still within the resolution window. Click to filter the Deviation List." bgColor="bg-amber-50" onClick={() => { setDeviationType('OVERDUE'); setPage(1); }} selected={deviationType === 'OVERDUE'} />
+          <MetricCard title="Missed" value={formatNumber(deviationKpis.data.missedCount)} description="Steps that passed the maximum resolution window — now permanently missed. Click to filter the Deviation List." bgColor="bg-red-50" onClick={() => { setDeviationType('MISSED'); setPage(1); }} selected={deviationType === 'MISSED'} />
+          <MetricCard title="Order Violation" value={formatNumber(deviationKpis.data.orderViolationCount)} description="Steps completed out of the expected sequence order defined in the protocol. Click to filter the Deviation List." bgColor="bg-purple-50" onClick={() => { setDeviationType('ORDER_VIOLATION'); setPage(1); }} selected={deviationType === 'ORDER_VIOLATION'} />
         </div>
       ) : null}
 

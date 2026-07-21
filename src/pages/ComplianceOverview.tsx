@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/shared/PageHeader';
 import { MetricCard } from '../components/shared/MetricCard';
 import { Card } from '../components/shared/Card';
@@ -79,6 +79,7 @@ function SubActionsPanel({
 
 export default function ComplianceOverview() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [protocolId, setProtocolId] = useState('');
   // Pre-select a facility when arrived via a deep link (e.g. Facility Ranking → "?facility=<id>").
   const [facilityId, setFacilityId] = useState(searchParams.get('facility') ?? '');
@@ -173,16 +174,23 @@ export default function ComplianceOverview() {
                   const tiles = [
                     { key: 'total', label: 'Total Steps', value: totalSteps, denom: totalSteps, color: 'bg-gray-500', text: 'text-gray-800', bg: 'bg-gray-50', desc: 'Total applicable steps across all tracked patients.' },
                     { key: 'completed', label: 'Completed', value: completed, denom: totalSteps, color: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', sub: { onTime, late }, desc: 'Steps that have been completed (on time or late).' },
-                    { key: 'due', label: 'Due', value: due, denom: totalSteps, color: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', desc: 'Steps that are currently due and within the allowed window.' },
-                    { key: 'overdue', label: 'Overdue', value: overdue, denom: totalSteps, color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', desc: 'Steps that have exceeded their due date but are not yet missed.' },
-                    { key: 'missed', label: 'Missed', value: missed, denom: totalSteps, color: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', desc: 'Steps that were never completed within the allowed window.' },
+                    { key: 'due', label: 'Due', value: due, denom: totalSteps, color: 'bg-indigo-500', text: 'text-indigo-700', bg: 'bg-indigo-50', desc: 'Steps that are currently due and within the allowed window. Click to open the Deviations page.', nav: '/deviations' },
+                    { key: 'overdue', label: 'Overdue', value: overdue, denom: totalSteps, color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', desc: 'Steps that have exceeded their due date but are not yet missed. Click to see the overdue deviations.', nav: '/deviations?type=OVERDUE' },
+                    { key: 'missed', label: 'Missed', value: missed, denom: totalSteps, color: 'bg-rose-500', text: 'text-rose-700', bg: 'bg-rose-50', desc: 'Steps that were never completed within the allowed window. Click to see the missed deviations.', nav: '/deviations?type=MISSED' },
                     { key: 'pending', label: 'Pending', value: pending, denom: totalSteps, color: 'bg-gray-400', text: 'text-gray-700', bg: 'bg-gray-100', desc: 'Steps not yet triggered — waiting for a preceding step to complete.' },
                   ];
 
-                  return tiles.map(({ key, label, value, denom, color, text, bg, sub, desc }) => {
+                  return tiles.map(({ key, label, value, denom, color, text, bg, sub, desc, nav }) => {
                     const pct = Math.round((value / (denom || 1)) * 100);
                     return (
-                      <div key={key} className={`rounded-lg ${bg} p-3 relative group`}>
+                      <div
+                        key={key}
+                        onClick={nav ? () => navigate(nav) : undefined}
+                        role={nav ? 'button' : undefined}
+                        tabIndex={nav ? 0 : undefined}
+                        onKeyDown={nav ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(nav); } } : undefined}
+                        className={`rounded-lg ${bg} p-3 relative group ${nav ? 'cursor-pointer transition-shadow hover:ring-2 hover:ring-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500' : ''}`}
+                      >
                         <p className={`text-2xl font-bold ${text}`}>
                           {formatNumber(value)}
                           <span className="text-sm font-normal text-gray-400">/{formatNumber(denom)}</span>
