@@ -9,27 +9,28 @@ import { ErrorAlert } from '../shared/ErrorAlert';
 import { useFacilityRanking } from '../../hooks/useFacilities';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../../utils/facilityDisplay';
+import { splitTopBottom } from '../../utils/ranking';
 import type { FacilityRanking } from '../../api/types';
 
 const HIGHLIGHT_COUNT = 5;
 
 export function FacilityHighlightsCard({ className }: { className?: string }) {
-  const topRanking = useFacilityRanking({
+  // Fetch the full (district-scoped) ranking once, then slice top/bottom client-side. Fetching
+  // separate limit=5 desc/asc lists breaks under the global district filter (the server limit is
+  // applied before district scoping), which is why Top-5 and Bottom-5 could show different counts.
+  const ranking = useFacilityRanking({
     rankBy: 'complianceRate',
     order: 'desc',
-    limit: HIGHLIGHT_COUNT,
-  });
-  const bottomRanking = useFacilityRanking({
-    rankBy: 'complianceRate',
-    order: 'asc',
-    limit: HIGHLIGHT_COUNT,
+    limit: 200,
   });
 
-  const isLoading = topRanking.isPending || bottomRanking.isPending;
-  const error = topRanking.error ?? bottomRanking.error;
+  const isLoading = ranking.isPending;
+  const error = ranking.error;
 
-  const topFacilities = topRanking.data?.data ?? [];
-  const bottomFacilities = bottomRanking.data?.data ?? [];
+  const { top: topFacilities, bottom: bottomFacilities } = useMemo(
+    () => splitTopBottom(ranking.data?.data ?? [], HIGHLIGHT_COUNT),
+    [ranking.data],
+  );
 
   const duplicateNames = useMemo(
     () => findDuplicateFacilityNames([...topFacilities, ...bottomFacilities]),

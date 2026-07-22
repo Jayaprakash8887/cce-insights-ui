@@ -12,6 +12,7 @@ export function useDeviationKpis(protocolDefinitionId?: string) {
     queryFn: () => getDeviationKpis({
       protocolDefinitionId,
       facilityId: filters.facilityId,
+      district: filters.district,
       startDate: filters.startDate,
       endDate: filters.endDate,
     }),

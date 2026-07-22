@@ -32,6 +32,7 @@ export interface GlobalFilters {
   startDate?: string;
   endDate?: string;
   facilityId?: string;
+  district?: string;
 }
 
 // ─── Compliance Summaries ────────────────────────────────────
@@ -462,6 +463,8 @@ export type PractitionerRankBy = 'complianceRate' | 'totalPatients' | 'totalEven
 export interface FacilityLookup {
   id: string;
   name: string;
+  /** Facility's district (may be empty) — enables constraining pickers to the global district. */
+  district?: string;
 }
 
 export interface AtRiskHotspot {

@@ -52,6 +52,10 @@ npm run dev          # http://localhost:3001
 | `/ingestion` | Ingestion Pipeline | Funnel, rejections, source quality, pipeline loss |
 | `/exports` | Exports | Download compliance data as CSV/JSON |
 
+> **Global filters:** the header has a **District** dropdown + **From / To** date range. The district
+> scopes every clinical page to that district's facilities (hidden on Ingestion). Adoption is no longer
+> a nav page — its metrics live in the Facility Ranking.
+
 ## Insights Service Endpoints Consumed
 
 | Group | Endpoints | Path Prefix |
@@ -65,7 +69,7 @@ npm run dev          # http://localhost:3001
 | Facility Analytics | 1 | `/v1/insights/facilities/ranking` |
 | Practitioner Analytics | 1 | `/v1/insights/practitioners/` |
 | Ingestion Analytics | 4 | `/v1/insights/ingestion/` |
-| Lookups | 5 | `/v1/insights/lookups/` |
+| Lookups | 6 | `/v1/insights/lookups/` |
 | Export | 1 | `/v1/insights/exports/` |
 
 ## Documentation

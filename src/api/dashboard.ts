@@ -89,6 +89,7 @@ export interface ReferralsKpi {
 
 export function getReferralsKpi(params?: {
   facilityId?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<ReferralsKpi> {

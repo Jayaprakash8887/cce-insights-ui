@@ -9,6 +9,10 @@ export function getFacilities() {
   return apiGet<FacilityLookup[]>('/lookups/facilities');
 }
 
+export function getDistricts() {
+  return apiGet<string[]>('/lookups/districts');
+}
+
 export function getPractitioners() {
   return apiGet<string[]>('/lookups/practitioners');
 }

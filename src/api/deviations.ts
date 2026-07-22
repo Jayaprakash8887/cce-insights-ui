@@ -7,12 +7,14 @@ import type {
 export function getDeviationKpis(params?: {
   protocolDefinitionId?: string;
   facilityId?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<DeviationKpis> {
   return apiGet('/deviations/kpis', {
     protocolDefinitionId: params?.protocolDefinitionId,
     facilityId: params?.facilityId,
+    district: params?.district,
     startDate: params?.startDate,
     endDate: params?.endDate,
   });
@@ -21,6 +23,7 @@ export function getDeviationKpis(params?: {
 export function getDeviations(params?: {
   deviationType?: string;
   facilityId?: string;
+  district?: string;
   protocolDefinitionId?: string;
   startDate?: string;
   endDate?: string;
@@ -31,6 +34,7 @@ export function getDeviations(params?: {
   return apiGetPaginated<DeviationRecord>('/deviations', {
     deviationType: params?.deviationType,
     facilityId: params?.facilityId,
+    district: params?.district,
     protocolDefinitionId: params?.protocolDefinitionId,
     startDate: params?.startDate,
     endDate: params?.endDate,
@@ -43,6 +47,7 @@ export function getDeviations(params?: {
 export function getDeviationTrends(params?: {
   interval?: string;
   facilityId?: string;
+  district?: string;
   protocolDefinitionId?: string;
   startDate?: string;
   endDate?: string;
@@ -50,6 +55,7 @@ export function getDeviationTrends(params?: {
   return apiGet('/deviations/trends', {
     interval: params?.interval,
     facilityId: params?.facilityId,
+    district: params?.district,
     protocolDefinitionId: params?.protocolDefinitionId,
     startDate: params?.startDate,
     endDate: params?.endDate,
@@ -60,6 +66,7 @@ export function getDeviationsByAction(params?: {
   protocolDefinitionId?: string;
   deviationType?: string;
   facilityId?: string;
+  district?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -68,6 +75,7 @@ export function getDeviationsByAction(params?: {
     protocolDefinitionId: params?.protocolDefinitionId,
     deviationType: params?.deviationType,
     facilityId: params?.facilityId,
+    district: params?.district,
     startDate: params?.startDate,
     endDate: params?.endDate,
     limit: params?.limit?.toString(),

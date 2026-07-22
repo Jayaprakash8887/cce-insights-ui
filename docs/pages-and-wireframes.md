@@ -2,10 +2,41 @@
 
 > **CCE Insights UI** — Page-by-page design reference with ASCII wireframes  
 > Each page maps to one or more Insights Service API endpoints. Compliance categories are binary: **Compliant** (`on_track`) and **Non-Compliant** (`non_compliant`).
-> Default date range: **90 days** (`VITE_DEFAULT_DATE_RANGE_DAYS`). The global header is a **From / To**
-> date-picker pair (`DateRangeFilter`); there is **no global facility selector** in the header — facility
-> scoping is per-page. The sidebar links to 8 pages: Dashboard, Facilities, Compliance, Deviations,
-> Patients, Adoption, Events, Ingestion. (Practitioners, Intelligence, and Exports are URL-only — not in the nav.)
+> Default date range: **90 days** (`VITE_DEFAULT_DATE_RANGE_DAYS`). The global header is a **District**
+> dropdown + **From / To** date-picker pair (`DistrictFilter` + `DateRangeFilter`). The sidebar links to
+> 7 pages: Dashboard, Facilities, Compliance, Deviations, Patients, Events, Ingestion. (Adoption,
+> Practitioners, Intelligence, and Exports are URL-only / removed — not in the nav.)
+
+---
+
+## 0. Recent changes & global filters
+
+**Global District filter.** The header carries a `District` dropdown (`DistrictFilter`, options from
+`GET /lookups/districts`) next to the date range. It is URL-synced via `FilterContext.district`,
+threaded through `useGlobalFilters` into every clinical page's query params + queryKeys, and scopes
+results to that district's facilities alongside the date range. **Hidden on the Ingestion page**
+(pipeline health, not clinical-event metrics). Per-facility pickers (e.g. the Compliance Facility
+dropdown, the Events by-facility table) are constrained to the selected district.
+
+**Other recent structural changes:**
+- **Dashboard** — the four national indicators (Service Compliance Rate, Total Facilities, eBuzima
+  Adoption Rate, **Total Referrals**) are grouped into **one card** that links to Facilities. Rates are
+  the **simple average of each facility's rate** (equal weight, divided by total facility count).
+  The Ingestion Rate and Referral Rate placeholder tiles were removed.
+- **Facilities → Facility Ranking** — enriched with the adoption columns (Expected / Actual Visits /
+  Day, Reporting Gap, Adoption Rate) and a **Status** (Active/Inactive) column; the Events column was
+  dropped; columns are grouped (Referrals | Compliance | e-Buzima Adoption | Status). The **Facility
+  Status** Active/Inactive indicators filter the ranking; sorting is by Referrals / Compliance /
+  Adoption Rate (default Referrals). Clicking a facility opens it on the Compliance page
+  (`/compliance?facility=<id>`). **Top/Bottom-5** sits at the bottom and is sliced **client-side from
+  the single district-scoped ranking** (`splitTopBottom`) — so both lists reflect the same scoped set
+  and, with ≤ 5 facilities in scope, show all of them in opposite order. (Fetching separate
+  server-side `limit=5` desc/asc lists broke under the district filter, since the limit is applied
+  before district scoping.)
+- **Adoption** page removed from the sidebar (its metrics now live in the Facility Ranking).
+- **Compliance** transactions **Due / Overdue / Missed** tiles link to the Deviations page with the
+  matching filter (carrying the protocol); the **Deviations** top cards filter the Deviation List.
+- **Patients** page — the top Referrals card was removed.
 
 ---
 

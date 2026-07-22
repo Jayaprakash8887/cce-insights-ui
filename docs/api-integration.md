@@ -1208,7 +1208,13 @@ export function getProtocols() {
 }
 
 export function getFacilities() {
-  return apiGet<string[]>('/lookups/facilities');
+  // FacilityLookup now includes `district` (enables constraining pickers to the global district).
+  return apiGet<FacilityLookup[]>('/lookups/facilities');
+}
+
+export function getDistricts() {
+  // Distinct district names — feeds the global District filter (useDistricts).
+  return apiGet<string[]>('/lookups/districts');
 }
 
 export function getPractitioners() {
@@ -1485,16 +1491,24 @@ export function useGlobalFilters(): GlobalFilters {
     startDate: toStartOfDayISO(ctx.startDate),
     endDate: toEndOfDayISO(ctx.endDate),
     facilityId: ctx.facilityId,
-  }), [ctx.startDate, ctx.endDate, ctx.facilityId]);
+    district: ctx.district,
+  }), [ctx.startDate, ctx.endDate, ctx.facilityId, ctx.district]);
 }
 ```
 
 > **Note:** The hook converts YYYY-MM-DD date strings from the FilterContext to ISO 8601 OffsetDateTime
 > format (`2026-03-01T00:00:00Z` / `2026-03-31T23:59:59Z`) required by the Insights Service.
 >
-> `FilterContext` carries only `startDate`/`endDate`/`facilityId`. The enrollment-vs-activity
+> `FilterContext` carries `startDate`/`endDate`/`facilityId`/`district`. The enrollment-vs-activity
 > `dateFilterMode` is **not** a global filter — it is a per-query param on `getProtocolPatients` /
 > `useProtocolPatients` (§3.1, §4.1), driven by a local radio on the Patient List page.
+
+> **Global District filter.** A `District` dropdown in the header (`DistrictFilter`, options from
+> `useDistricts` → `GET /lookups/districts`) sets `district` on the FilterContext (URL-synced). It is
+> threaded into every clinical page's query params + queryKeys and scopes results to that district's
+> facilities alongside the date range. It is **hidden on the Ingestion page** (pipeline health, not a
+> clinical-event metric) and Ingestion queries do not send it. Per-facility pickers (e.g. the
+> Compliance Facility dropdown) are constrained to the selected district.
 
 ### 4.6 Other hook modules
 
