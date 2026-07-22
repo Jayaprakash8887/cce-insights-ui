@@ -630,7 +630,9 @@ export interface JourneyStep {
 
 // ─── KPI / analytics additions ───────────────────────────────
 export interface EventKpis { /* cumulative event pipeline KPIs incl. pipeline loss */ }
-export interface AdoptionKpi { /* e-Buzima adoption metrics (facilities/adoption) */ }
+export interface AdoptionKpi { facilityId: string; facilityName: string; district: string;
+  /* RI-33 — period totals for the selected range, not per-day: */
+  expectedVisits: number; actualVisits: number; adoptionRate: number; reportingGap: number; }
 export interface FacilityActivitySummary { totalInScope: number; activeFacilities: number; inactiveFacilities: number; /* … */ }
 export interface FacilityReference { facilityId: string; facilityName: string; /* … */ }
 export interface FacilityLookup { facilityId: string; facilityName: string; }
@@ -1048,14 +1050,19 @@ export function getFacilityReference(): Promise<FacilityReference[]> {
   return apiGet('/facilities/reference');
 }
 
-// e-Buzima adoption KPIs (Dashboard EbuzimaAdoptionCard). Dates truncated to LocalDate.
+// e-Buzima adoption KPIs (Facilities → Facility Ranking adoption columns). Respects the global
+// date + district + facility filters; dates truncated to LocalDate. Returns one row per facility.
 export function getAdoptionKpis(params?: {
   startDate?: string;
   endDate?: string;
-}): Promise<AdoptionKpi> {
+  facilityId?: string;
+  district?: string;
+}): Promise<AdoptionKpi[]> {
   return apiGet('/facilities/adoption', {
     startDate: params?.startDate?.substring(0, 10),
     endDate: params?.endDate?.substring(0, 10),
+    facilityId: params?.facilityId,
+    district: params?.district,
   });
 }
 

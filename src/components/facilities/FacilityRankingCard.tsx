@@ -164,16 +164,16 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                     <th className="border-b border-gray-200 pt-3 pb-2 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Facility</th>
                     <th className="border-b border-l border-gray-200 pt-3 pb-2 pl-4 pr-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Referrals</th>
                     <th className="border-b border-l border-gray-200 pt-3 pb-1.5 pl-4 pr-4 text-center" colSpan={3}>Compliance</th>
-                    <th className="border-b border-l border-gray-200 pt-3 pb-1.5 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption</th>
+                    <th className="border-b border-l border-gray-200 pt-3 pb-1.5 pl-4 pr-4 text-center" colSpan={4}>e-Buzima Adoption (Selected Period)</th>
                     <th className="border-b border-l border-gray-200 pt-3 pb-2 pl-4 align-bottom text-xs font-medium text-gray-500" rowSpan={2}>Status</th>
                   </tr>
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="border-l border-gray-200 pt-2.5 pb-2 pl-4 pr-4">Tracked Patients</th>
                     <th className="pt-2.5 pb-2 pr-4">Deviations</th>
                     <th className="pt-2.5 pb-2 pr-4">Compliance</th>
-                    <th className="border-l border-gray-200 pt-2.5 pb-2 pl-4 pr-4 text-center">Expected Visits / Day</th>
-                    <th className="pt-2.5 pb-2 pr-4 text-center">Actual Visits / Day</th>
-                    <th className="pt-2.5 pb-2 pr-4 text-center">Reporting Gap / Day</th>
+                    <th className="border-l border-gray-200 pt-2.5 pb-2 pl-4 pr-4 text-center">Expected Visits (Period)</th>
+                    <th className="pt-2.5 pb-2 pr-4 text-center">Actual Visits (Period)</th>
+                    <th className="pt-2.5 pb-2 pr-4 text-center">Reporting Gap</th>
                     <th className="pt-2.5 pb-2 pr-4 text-center">Adoption Rate</th>
                   </tr>
                 </thead>
@@ -182,7 +182,7 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                     const rank = (page - 1) * TABLE_PAGE_SIZE + i + 1;
                     const active = activeByFacility.get(f.facilityId) ?? false;
                     const a = adoptionByFacility.get(f.facilityId);
-                    const gap = a?.reportingGapPerDay ?? 0;
+                    const gap = a?.reportingGap ?? 0;
                     const adoptionRate = a?.adoptionRate ?? 0;
                     const rateColor = adoptionRate >= 80 ? 'text-green-700' : adoptionRate >= 50 ? 'text-amber-700' : 'text-red-700';
                     return (
@@ -209,8 +209,8 @@ export function FacilityRankingCard({ statusFilter = 'all' }: { statusFilter?: F
                             {formatPercentage(f.complianceRate)}
                           </span>
                         </td>
-                        <td className="border-l border-gray-200 py-2 pl-4 pr-4 text-center tabular-nums text-gray-600">{formatNumber(a?.expectedVisitsPerDay ?? 0)}</td>
-                        <td className="py-2 pr-4 text-center tabular-nums">{formatNumber(a?.actualVisitsPerDay ?? 0)}</td>
+                        <td className="border-l border-gray-200 py-2 pl-4 pr-4 text-center tabular-nums text-gray-600">{formatNumber(a?.expectedVisits ?? 0)}</td>
+                        <td className="py-2 pr-4 text-center tabular-nums">{formatNumber(a?.actualVisits ?? 0)}</td>
                         <td className={`py-2 pr-4 text-center font-medium tabular-nums ${gap > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           {gap > 0 ? `−${formatNumber(gap)}` : `+${formatNumber(Math.abs(gap))}`}
                         </td>

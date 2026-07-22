@@ -46,7 +46,7 @@ npm run dev          # http://localhost:3001
 | `/compliance/patients/:id` | Patient Detail | Timeline, protocol journey with source color-coded pills, events, deviations |
 | `/deviations` | Deviations | Trends, most-deviated steps, resolution rate |
 | `/events` | Event Volume | Volume by resource type and facility |
-| `/facilities` | Facility Analytics | Facility rankings, color-coded compliance, non-compliant hotspots |
+| `/facilities` | Facility Analytics | Facility rankings, color-coded compliance, e-Buzima adoption columns (period totals), non-compliant hotspots |
 | `/practitioners` | Practitioner Analytics | Practitioner compliance table with color-coded legend |
 | `/intelligence` | Intelligence | Action instances, delivery status donut, destinations, adaptors, actions table |
 | `/ingestion` | Ingestion Pipeline | Funnel, rejections, source quality, pipeline loss |

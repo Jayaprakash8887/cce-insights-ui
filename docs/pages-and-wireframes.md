@@ -23,9 +23,12 @@ dropdown, the Events by-facility table) are constrained to the selected district
   Adoption Rate, **Total Referrals**) are grouped into **one card** that links to Facilities. Rates are
   the **simple average of each facility's rate** (equal weight, divided by total facility count).
   The Ingestion Rate and Referral Rate placeholder tiles were removed.
-- **Facilities → Facility Ranking** — enriched with the adoption columns (Expected / Actual Visits /
-  Day, Reporting Gap, Adoption Rate) and a **Status** (Active/Inactive) column; the Events column was
-  dropped; columns are grouped (Referrals | Compliance | e-Buzima Adoption | Status). The **Facility
+- **Facilities → Facility Ranking** — enriched with the adoption columns (**Expected Visits (Period)**,
+  **Actual Visits (Period)**, Reporting Gap, Adoption Rate) and a **Status** (Active/Inactive) column;
+  the Events column was dropped; columns are grouped (Referrals | Compliance | **e-Buzima Adoption
+  (Selected Period)** | Status). **RI-33:** Expected/Actual are **period totals** for the selected
+  date range — Expected = baseline/day × days in range, Actual = Σ daily reporters — not per-day
+  figures (for a single-day view they equal the daily baseline). The **Facility
   Status** Active/Inactive indicators filter the ranking; sorting is by Referrals / Compliance /
   Adoption Rate (default Referrals). Clicking a facility opens it on the Compliance page
   (`/compliance?facility=<id>`). **Top/Bottom-5** sits at the bottom and is sliced **client-side from
@@ -70,7 +73,7 @@ dropdown, the Events by-facility table) are constrained to the selected district
 |----------|---------|  
 | `GET /v1/insights/dashboard/compliance-summary` | **Service Compliance Rate** (`patients.complianceRate`; context = compliant of tracked) |
 | `GET /v1/insights/facilities/activity-summary` | **Total Facilities** (`totalInScope`; context = active · inactive) |
-| `GET /v1/insights/facilities/adoption` | **eBuzima Adoption Rate** (Σ actual ÷ Σ expected; context = actual vs expected/day) |
+| `GET /v1/insights/facilities/adoption` | **eBuzima Adoption Rate** (Σ actual ÷ Σ expected; context = actual vs expected over the selected period) |
 | `GET /v1/insights/dashboard/referrals` | **Referral Rate** — *placeholder 0%, definition pending* |
 | `GET /v1/insights/ingestion/funnel` | **Ingestion Rate** (`acceptanceRate`; context = accepted of received) |
 
@@ -87,7 +90,7 @@ A single **"National Indicators"** grid of `KpiCard`s — each is an icon chip +
 │  ┌─ Service Compliance ─┐ ┌─ Total Facilities ──┐ ┌─ eBuzima Adoption ──┐     │
 │  │ 🩺  75.0%           │ │ 🏢  17              │ │ 📈  0.0%            │     │
 │  │ 6 of 8 compliant    │ │ 2 active · 15 inact.│ │ 3 actual / 0 exp.   │     │
-│  │ View compliance →   │ │ View facilities →   │ │ View adoption →     │     │
+│  │ View compliance →   │ │ View facilities →   │ │ View facilities →   │     │
 │  └─────────────────────┘ └─────────────────────┘ └─────────────────────┘     │
 │  ┌─ Referral Rate ──────────────────┐ ┌─ Ingestion Rate ─────────────────┐   │
 │  │ ⇄  —   (Definition pending)      │ │ 📥  98.2%                         │   │
@@ -102,7 +105,7 @@ A single **"National Indicators"** grid of `KpiCard`s — each is an icon chip +
 |------|-------|--------------|----------|
 | **Service Compliance Rate** | `patients.complianceRate` | compliant of tracked | `/compliance` |
 | **Total Facilities** | `totalInScope` | active · inactive | `/facilities` |
-| **eBuzima Adoption Rate** | Σ actual ÷ Σ expected | actual vs expected / day | `/adoption` |
+| **eBuzima Adoption Rate** | Σ actual ÷ Σ expected | actual vs expected (selected period) | `/facilities` |
 | **Referral Rate** | `—` (neutral placeholder, 0%) | "Definition pending" | `/compliance/patients` |
 | **Ingestion Rate** | `acceptanceRate` | accepted of received | `/ingestion` |
 
@@ -550,10 +553,14 @@ own side menu (RI-38); the Dashboard's **eBuzima Adoption Rate** card links here
 Hosts the `EbuzimaAdoptionCard`: a country-level summary that **drills down** to facility detail
 (RI-43).
 
-- **Summary tiles** (top): Expected Visits / Day, Actual Visits / Day, Reporting Gap / Day, Adoption
+> **Legacy:** this page was removed from the sidebar — the adoption metrics now live in the
+> **Facility Ranking** (Facilities page). The `EbuzimaAdoptionCard` component is retained (off-nav)
+> and its columns still read raw values, so RI-33's period totals apply here too.
+
+- **Summary tiles** (top): Expected Visits, Actual Visits, Reporting Gap, Adoption
   Rate (Σ actual ÷ Σ expected). Click the card to expand the detail.
-- **Drill-down table** (per facility): District · Facility · Expected Visits/Day · Actual Visits/Day ·
-  Reporting Gap/Day (±, red = under-reporting) · Adoption Rate (colour-coded ≥80 / ≥50 / <50), with a
+- **Drill-down table** (per facility): District · Facility · Expected Visits · Actual Visits ·
+  Reporting Gap (±, red = under-reporting) · Adoption Rate (colour-coded ≥80 / ≥50 / <50), with a
   **District + Facility filter** (shared `DistrictFacilityFilter`) and pagination. Sorted district
   A→Z, facility A→Z, then highest rate.
 - The global date filter scopes the period (multi-day aggregation via `getAdoptionKpisByDateRange`).
