@@ -11,6 +11,7 @@ import { useProtocols, useFacilityLookup } from '../hooks/useLookups';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../utils/facilityDisplay';
+import { buildWorkflowTree } from '../utils/serviceWorkflow';
 
 /* Collapsible sub-actions panel for the Service Workflow Compliance timeline */
 function SubActionsPanel({
@@ -266,65 +267,66 @@ export default function ComplianceOverview() {
                 </div>
                 {(() => {
                   const order = actionOrder.data ?? [];
-                  const orderMap = new Map(order.map((e, idx) => [e.actionId, idx]));
-                  const parentMap = new Map(order.map((e) => [e.actionId, e.parentActionId]));
                   const titleMap = new Map(order.map((e) => [e.actionId, e.title]));
+                  const labelOf = (id: string) =>
+                    titleMap.get(id) || id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-                  const sortedSteps = [...stepAnalytics.data.steps]
-                    .filter((s) => s.totalInstances > 0)
-                    .sort((a, b) => (orderMap.get(a.actionId) ?? 999) - (orderMap.get(b.actionId) ?? 999));
-
-                  // Each step is measured against its own total instances (the API's native
-                  // completionRate), so completed never exceeds the total and we never divide
-                  // by an unrelated upstream count.
-                  // Group into top-level and children
-                  const topLevel = sortedSteps.filter((s) => !parentMap.get(s.actionId));
-                  const childrenOf = (parentId: string) =>
-                    sortedSteps.filter((s) => parentMap.get(s.actionId) === parentId);
+                  // RI-50: build the tree via the shared helper, which synthesizes a container for a
+                  // parent whose only activity is a data-bearing sub-action (e.g. a referral-only
+                  // journey) so that sub-action is never hidden.
+                  const tree = buildWorkflowTree(stepAnalytics.data.steps, order);
 
                   return (
                     <div className="space-y-0 relative">
                       {/* Vertical connector line */}
                       <div className="absolute left-[11px] top-6 bottom-6 w-0.5 bg-gray-200" />
 
-                      {topLevel.map((step) => {
-                        const denom = step.totalInstances;
-                        const pct = denom > 0 ? Math.round((step.completedCount / denom) * 100) : 0;
-                        const missing = Math.max(denom - step.completedCount, 0);
-                        const label = titleMap.get(step.actionId) || step.actionId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-                        const children = childrenOf(step.actionId);
+                      {tree.map((node) => {
+                        const denom = node.totalInstances;
+                        const pct = denom > 0 ? Math.round((node.completedCount / denom) * 100) : 0;
+                        const missing = Math.max(denom - node.completedCount, 0);
+                        const label = labelOf(node.actionId);
                         const barColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
                         const pctColor = pct >= 80 ? 'text-green-700' : pct >= 50 ? 'text-amber-700' : 'text-red-700';
                         const dotColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400';
 
                         return (
-                          <div key={step.actionId} className="relative pl-10 pb-4">
-                            {/* Timeline dot - bold & bright */}
-                            <div className={`absolute left-1.5 top-5 h-4 w-4 rounded-full ${dotColor} shadow-md z-10 ring-3 ring-white`} />
+                          <div key={node.actionId} className="relative pl-10 pb-4">
+                            {/* Timeline dot - bold & bright (grey for a synthetic grouping) */}
+                            <div className={`absolute left-1.5 top-5 h-4 w-4 rounded-full ${node.synthetic ? 'bg-gray-300' : dotColor} shadow-md z-10 ring-3 ring-white`} />
 
                             <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                               {/* Header row */}
                               <div className="flex items-center justify-between">
                                 <h5 className="text-sm font-bold text-gray-900">{label}</h5>
-                                <span className={`text-lg font-bold ${pctColor}`}>{pct}%</span>
-                              </div>
-
-                              {/* Progress bar */}
-                              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                              </div>
-
-                              {/* Stats */}
-                              <div className="mt-2 flex items-center gap-2 text-xs">
-                                <span className="text-gray-600">{step.completedCount} of {denom} completed</span>
-                                {missing > 0 && (
-                                  <span className="text-red-500 font-medium">· {missing} missing</span>
+                                {node.synthetic ? (
+                                  <span className="text-[11px] font-medium text-gray-400">sub-actions only</span>
+                                ) : (
+                                  <span className={`text-lg font-bold ${pctColor}`}>{pct}%</span>
                                 )}
                               </div>
 
+                              {/* A synthetic parent has no measurement of its own — show its children only. */}
+                              {!node.synthetic && (
+                                <>
+                                  {/* Progress bar */}
+                                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                    <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                                  </div>
+
+                                  {/* Stats */}
+                                  <div className="mt-2 flex items-center gap-2 text-xs">
+                                    <span className="text-gray-600">{node.completedCount} of {denom} completed</span>
+                                    {missing > 0 && (
+                                      <span className="text-red-500 font-medium">· {missing} missing</span>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+
                               {/* Collapsible child steps as sub-timeline nodes */}
-                              {children.length > 0 && (
-                                <SubActionsPanel children={children} titleMap={titleMap} />
+                              {node.children.length > 0 && (
+                                <SubActionsPanel children={node.children} titleMap={titleMap} />
                               )}
                             </div>
                           </div>

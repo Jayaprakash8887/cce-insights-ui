@@ -180,6 +180,12 @@ Notes:
 | Select facility from dropdown | Re-scope the summary + workflow timeline to that facility. **RI-48:** when facilities share a name, the option shows `Name (id)` to disambiguate (same logic as the Facility Ranking table). |
 | Expand a workflow step | Reveal its sub-actions in the timeline |
 
+> **RI-50 — Service Workflow Compliance tree** (`buildWorkflowTree`): top-level steps are shown with
+> their data-bearing sub-actions nested. If a cohort's **only** activity is a sub-action whose parent
+> step has no data (e.g. a referral-only journey — the patient completed a `referral` sub-action but
+> no `consultation` step), the parent is **synthesized as a grouping container** ("sub-actions only",
+> no bar of its own) so the sub-action is still visible — previously the whole section rendered blank.
+
 ---
 
 ## 3. Protocol Analytics
