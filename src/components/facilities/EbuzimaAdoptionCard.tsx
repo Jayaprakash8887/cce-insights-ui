@@ -25,8 +25,8 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
   // No expected baseline (expected = 0): mirror the per-facility/backend rule — 100% when there IS
   // actual reporting (fully adopted / over-reporting), and 0% only when both expected AND actual are 0.
   const summary = useMemo(() => {
-    const expected = adoptionRows.reduce((s, f) => s + f.expectedVisitsPerDay, 0);
-    const actual = adoptionRows.reduce((s, f) => s + f.actualVisitsPerDay, 0);
+    const expected = adoptionRows.reduce((s, f) => s + f.expectedVisits, 0);
+    const actual = adoptionRows.reduce((s, f) => s + f.actualVisits, 0);
     const gap = expected - actual;
     const rate = expected > 0
       ? Math.round((actual * 1000) / expected) / 10
@@ -95,9 +95,9 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
                 <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                   <th className="pb-2 pr-4">District</th>
                   <th className="pb-2 pr-4">Facility</th>
-                  <th className="pb-2 pr-4 text-center">Expected Visits / Day</th>
-                  <th className="pb-2 pr-4 text-center">Actual Visits / Day</th>
-                  <th className="pb-2 pr-4 text-center">Reporting Gap / Day</th>
+                  <th className="pb-2 pr-4 text-center">Expected Visits</th>
+                  <th className="pb-2 pr-4 text-center">Actual Visits</th>
+                  <th className="pb-2 pr-4 text-center">Reporting Gap</th>
                   <th className="pb-2 pr-4 text-center">Adoption Rate</th>
                 </tr>
               </thead>
@@ -109,10 +109,10 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
                     <tr key={f.facilityId} className="hover:bg-gray-50">
                       <td className="truncate py-2 pr-4 font-medium text-gray-900">{f.district || '—'}</td>
                       <td className="truncate py-2 pr-4 font-medium text-gray-900" title={f.facilityName}>{formatFacilityDisplayName(f, duplicateNames)}</td>
-                      <td className="py-2 pr-4 text-center text-gray-600">{formatNumber(f.expectedVisitsPerDay)}</td>
-                      <td className="py-2 pr-4 text-center">{formatNumber(f.actualVisitsPerDay)}</td>
-                      <td className={`py-2 pr-4 text-center font-medium ${f.reportingGapPerDay > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {f.reportingGapPerDay > 0 ? `−${formatNumber(f.reportingGapPerDay)}` : `+${formatNumber(Math.abs(f.reportingGapPerDay))}`}
+                      <td className="py-2 pr-4 text-center text-gray-600">{formatNumber(f.expectedVisits)}</td>
+                      <td className="py-2 pr-4 text-center">{formatNumber(f.actualVisits)}</td>
+                      <td className={`py-2 pr-4 text-center font-medium ${f.reportingGap > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {f.reportingGap > 0 ? `−${formatNumber(f.reportingGap)}` : `+${formatNumber(Math.abs(f.reportingGap))}`}
                       </td>
                       <td className={`py-2 pr-4 text-center font-semibold ${rateColor}`}>{formatPercentage(rate, 2)}</td>
                     </tr>
@@ -148,9 +148,9 @@ export function EbuzimaAdoptionCard({ className }: { className?: string }) {
       className={className}
       detail={adoptionRows.length === 0 ? undefined : detail}
     >
-      {stat('Expected Visits / Day', formatNumber(summary.expected))}
-      {stat('Actual Visits / Day', formatNumber(summary.actual))}
-      {stat('Reporting Gap / Day',
+      {stat('Expected Visits', formatNumber(summary.expected))}
+      {stat('Actual Visits', formatNumber(summary.actual))}
+      {stat('Reporting Gap',
         summary.gap > 0 ? `−${formatNumber(summary.gap)}` : `+${formatNumber(Math.abs(summary.gap))}`,
         summary.gap > 0 ? 'text-red-600' : 'text-green-600')}
       {stat('Adoption Rate', formatPercentage(summary.rate, 1))}

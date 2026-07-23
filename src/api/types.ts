@@ -536,10 +536,13 @@ export interface AdoptionKpi {
   facilityName: string;
   /** Facility's district (may be empty). */
   district: string;
-  expectedVisitsPerDay: number;
-  actualVisitsPerDay: number;
+  /** RI-33: expected visits over the whole selected period (baseline/day × days), not per day. */
+  expectedVisits: number;
+  /** Actual visits summed over the selected period. */
+  actualVisits: number;
   adoptionRate: number;
-  reportingGapPerDay: number;
+  /** expectedVisits − actualVisits over the period; positive = under-reporting. */
+  reportingGap: number;
 }
 
 // ─── Event KPIs (from mv_daily_event_kpis) ───────────────────
