@@ -10,7 +10,7 @@ import { PageHeader } from '../components/shared/PageHeader';
 import { ErrorAlert } from '../components/shared/ErrorAlert';
 import { rateTone, type Tone } from '../components/shared/KpiCard';
 import { useFacilityActivitySummary, useAdoptionKpis, useFacilityRanking } from '../hooks/useFacilities';
-import { usePatientReferralsReceived } from '../hooks/usePatients';
+import { useReferralsKpi } from '../hooks/useDashboard';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 
 const TONE_COLOR: Record<Tone, string> = {
@@ -37,8 +37,12 @@ export default function Dashboard() {
   const complianceRanking = useFacilityRanking({ rankBy: 'complianceRate', order: 'desc', limit: 1000 });
   const facilities = useFacilityActivitySummary();
   const adoption = useAdoptionKpis();
-  // Total Referral Count = the same "Referrals Received by HIE" list the Patients page shows.
-  const referrals = usePatientReferralsReceived();
+  // RI-51 — Total Referrals reads the SAME referrals-received-by-HIE KPI (event count from
+  // mv_daily_referral_kpis) that the Facility Ranking "Referrals" column and the Facilities
+  // "Referral Details" card use, so the three surfaces always agree. (The Compliance page's
+  // "Referral" workflow step is a different, step-based metric — patients who *completed* the
+  // referral step — and is intentionally not reconciled with this received count.)
+  const referrals = useReferralsKpi();
 
   // National Service Compliance Rate = simple (equal-weight) average of each facility's own
   // compliance rate across ALL in-scope facilities (facility-level aggregation, not the pooled
@@ -97,7 +101,7 @@ export default function Dashboard() {
       icon: ArrowsRightLeftIcon,
       iconClass: 'bg-amber-50 text-amber-600',
       title: 'Total Referrals',
-      value: formatNumber(referrals.data?.length ?? 0),
+      value: formatNumber(referrals.data?.totalReferralsReceived ?? 0),
       tone: 'neutral',
       context: 'referrals received by HIE',
     },
