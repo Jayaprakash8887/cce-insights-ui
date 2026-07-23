@@ -375,6 +375,10 @@ The LATE badge renders only for `completionStatus === 'LATE'` (it is no longer s
 **Purpose:** Deviation KPIs, trends, most-deviated steps, and a paginated/searchable deviation list.
 Deviations have **three types**: `OVERDUE`, `MISSED`, `ORDER_VIOLATION`.
 
+> **RI-49:** the page has **Protocol** and **Facility** filters. The Facility dropdown (per-page,
+> district-scoped, `Name (id)`-disambiguated per RI-48) re-scopes **all four** sections — KPI cards,
+> trends, Most Deviated Steps, and the Deviation List — via `facilityId` on every deviation endpoint.
+
 ### APIs Used
 
 | Endpoint | Purpose |
