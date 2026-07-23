@@ -80,11 +80,20 @@ function SubActionsPanel({
 }
 
 export default function ComplianceOverview() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [protocolId, setProtocolId] = useState('');
-  // Pre-select a facility when arrived via a deep link (e.g. Facility Ranking → "?facility=<id>").
-  const [facilityId, setFacilityId] = useState(searchParams.get('facility') ?? '');
+  // RI-49 consistency: Protocol + Facility are URL-synced (query params are the single source of
+  // truth) so the address bar reflects the current view and is shareable; deep-links
+  // (?protocol=<id> / ?facility=<id>, e.g. from Facility Ranking) round-trip.
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value); else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
+  const protocolId = searchParams.get('protocol') ?? '';
+  const setProtocolId = (v: string) => setParam('protocol', v);
+  const facilityId = searchParams.get('facility') ?? '';
+  const setFacilityId = (v: string) => setParam('facility', v);
 
   const { district } = useGlobalFilters();
   const protocols = useProtocols();
@@ -186,8 +195,11 @@ export default function ComplianceOverview() {
                   const missed = data.stepMetrics.missed ?? 0;
                   const pending = data.stepMetrics.pending ?? 0;
                   const totalSteps = data.stepMetrics.totalSteps ?? 0;
-                  // Carry the current protocol selection forward to the Deviations page.
-                  const protoQ = protocolId ? `protocol=${encodeURIComponent(protocolId)}` : '';
+                  // Carry the current protocol + facility selection forward to the Deviations page.
+                  const carry = new URLSearchParams();
+                  if (protocolId) carry.set('protocol', protocolId);
+                  if (facilityId) carry.set('facility', facilityId);
+                  const protoQ = carry.toString();
 
                   const tiles = [
                     { key: 'total', label: 'Total Steps', value: totalSteps, denom: totalSteps, color: 'bg-gray-500', text: 'text-gray-800', bg: 'bg-gray-50', desc: 'Total applicable steps across all tracked patients.' },
