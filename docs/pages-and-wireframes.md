@@ -177,7 +177,7 @@ Notes:
 | Action | Behavior |
 |--------|----------|
 | Select protocol from dropdown | Fetch compliance summary + step analytics + action order |
-| Select facility from dropdown | Re-scope the summary + workflow timeline to that facility |
+| Select facility from dropdown | Re-scope the summary + workflow timeline to that facility. **RI-48:** when facilities share a name, the option shows `Name (id)` to disambiguate (same logic as the Facility Ranking table). |
 | Expand a workflow step | Reveal its sub-actions in the timeline |
 
 ---
@@ -419,6 +419,10 @@ Deviations have **three types**: `OVERDUE`, `MISSED`, `ORDER_VIOLATION`.
 │         │  └───────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **RI-48:** in the Deviation List, the **Facility** column shows `Name (id)` when two or more
+> facilities share the same name (same disambiguation as the Facility Ranking table); a unique
+> name is shown plain.
 
 ---
 

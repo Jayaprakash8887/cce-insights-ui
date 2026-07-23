@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/shared/PageHeader';
 import { MetricCard } from '../components/shared/MetricCard';
@@ -10,6 +10,7 @@ import { useStepAnalytics, useActionOrder } from '../hooks/useProtocols';
 import { useProtocols, useFacilityLookup } from '../hooks/useLookups';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { formatNumber, formatPercentage } from '../utils/formatters';
+import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../utils/facilityDisplay';
 
 /* Collapsible sub-actions panel for the Service Workflow Compliance timeline */
 function SubActionsPanel({
@@ -89,7 +90,16 @@ export default function ComplianceOverview() {
   const protocols = useProtocols();
   const facilities = useFacilityLookup();
   // Constrain the Facility picker to the globally-selected district (RI global filter).
-  const facilityOptions = (facilities.data ?? []).filter((fac) => !district || fac.district === district);
+  const facilityOptions = useMemo(
+    () => (facilities.data ?? []).filter((fac) => !district || fac.district === district),
+    [facilities.data, district],
+  );
+  // RI-48: when facilities share a display name, disambiguate the dropdown options with the
+  // facility id (same logic as the Facility Ranking table).
+  const duplicateFacilityNames = useMemo(
+    () => findDuplicateFacilityNames(facilityOptions.map((f) => ({ facilityId: f.id, facilityName: f.name }))),
+    [facilityOptions],
+  );
 
   // Default to the first protocol on initial load ONLY. Runs once — otherwise selecting
   // "All Protocols" (protocolId = '') would be immediately overwritten back to the first
@@ -141,7 +151,9 @@ export default function ComplianceOverview() {
             >
               <option value="">All Facilities</option>
               {facilityOptions.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+                <option key={f.id} value={f.id}>
+                  {formatFacilityDisplayName({ facilityId: f.id, facilityName: f.name }, duplicateFacilityNames)}
+                </option>
               ))}
             </select>
           </div>

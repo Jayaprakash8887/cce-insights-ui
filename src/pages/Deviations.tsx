@@ -12,6 +12,7 @@ import { useDeviationKpis, useDeviationTrends, useDeviationsByAction } from '../
 import { useActionOrder } from '../hooks/useProtocols';
 import { useGlobalFilters } from '../hooks/useGlobalFilters';
 import { useFacilityLookup } from '../hooks/useLookups';
+import { findDuplicateFacilityNames, formatFacilityDisplayName } from '../utils/facilityDisplay';
 import { getDeviations } from '../api/deviations';
 import { formatNumber } from '../utils/formatters';
 import { formatDate } from '../utils/dates';
@@ -56,7 +57,18 @@ export default function Deviations() {
     return map;
   }, [facilities.data]);
 
-  const getFacilityName = (facilityId: string) => facilityNameMap.get(facilityId) || facilityId;
+  // RI-48: names shared by 2+ distinct facilities are disambiguated with the facility id
+  // (same logic as the Facility Ranking table).
+  const duplicateFacilityNames = useMemo(
+    () => findDuplicateFacilityNames((facilities.data ?? []).map((f) => ({ facilityId: f.id, facilityName: f.name }))),
+    [facilities.data],
+  );
+
+  const getFacilityName = (facilityId: string) =>
+    formatFacilityDisplayName(
+      { facilityId, facilityName: facilityNameMap.get(facilityId) ?? facilityId },
+      duplicateFacilityNames,
+    );
 
   const deviationList = useQuery({
     queryKey: ['deviations', 'list', { deviationType, protocolDefinitionId: protocolFilter, ...filters }],
