@@ -751,6 +751,10 @@ export function getPatientProtocolTracking(patientId: string): Promise<ProtocolT
 
 // RI-44 — patients behind the "Referrals Received by HIE" indicator (event_time-scoped).
 // PatientReferral: { patientId, facilityId, facilityName, lastReferral, referralCount, matchedCount }
+// RI-51: this endpoint (distinct *patients*) is no longer used by the Dashboard — "Total Referrals"
+// now reads the event-count KPI (getReferralsKpi → /dashboard/referrals) so it agrees with the
+// Facility Ranking column + Facilities "Referral Details" card. This function has no live caller
+// today; kept for the (currently unmounted) PatientReferralCards strip.
 export function getReferralsReceivedByHie(filters?: GlobalFilters): Promise<PatientReferral[]> {
   return apiGet('/patients/referrals/received-by-hie', {
     startDate: filters?.startDate,

@@ -23,6 +23,13 @@ dropdown, the Events by-facility table) are constrained to the selected district
   Adoption Rate, **Total Referrals**) are grouped into **one card** that links to Facilities. Rates are
   the **simple average of each facility's rate** (equal weight, divided by total facility count).
   The Ingestion Rate and Referral Rate placeholder tiles were removed.
+  **RI-51:** **Total Referrals** is the **event count** of referrals received by HIE — it reads the
+  `/dashboard/referrals` KPI (`totalReferralsReceived`, from `mv_daily_referral_kpis.referral_count`),
+  the **same source** the Facility Ranking **Referrals** column and the Facilities **Referral Details**
+  card use, so the three surfaces always agree. (Previously it counted *distinct patients* via
+  `/patients/referrals/received-by-hie`, which disagreed with those event-count surfaces.) The
+  Compliance page's Service Workflow **Referral** step is a **separate** metric — patients who
+  *completed* the referral step — and is intentionally not reconciled with this received count.
 - **Facilities → Facility Ranking** — enriched with the adoption columns (**Expected Visits (Period)**,
   **Actual Visits (Period)**, Reporting Gap, Adoption Rate) and a **Status** (Active/Inactive) column;
   the Events column was dropped; columns are grouped (Referrals | Compliance | **e-Buzima Adoption
@@ -267,7 +274,9 @@ Notes:
 ## 4. Patient List
 
 **Route:** `/compliance/patients`  
-**Purpose:** Browse patients by compliance category (Compliant / Non-Compliant only), and (RI-44) a **Referrals** indicator strip above the list. Cohort can be filtered by enrollment date or step activity date.
+**Purpose:** Browse patients by compliance category (Compliant / Non-Compliant only). Cohort can be filtered by enrollment date or step activity date.
+
+> **Note (RI-44 / RI-51):** the `Referrals` indicator strip (`PatientReferralCards`) described below is **not currently mounted** on this page (see "the top Referrals card was removed" above). The `/patients/referrals/received-by-hie` endpoint (distinct patients) remains available but is **not surfaced in the live UI** — after **RI-51**, the only referral counts shown are the **event counts** on the Dashboard, Facility Ranking, and Facilities pages. The section below is retained for when the strip is re-introduced.
 
 ### APIs Used
 
