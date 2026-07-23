@@ -536,11 +536,13 @@ facility search). Color-coded compliance column with legend.
 
 ---
 
-## 8a. Adoption
+## 8a. Adoption (legacy — no longer a page)
 
-**Route:** `/adoption`  ·  **Sidebar:** "Adoption" (new in RI-38)  
-**Purpose:** e-Buzima reporting adoption vs. the expected baseline. Moved off the Dashboard into its
-own side menu (RI-38); the Dashboard's **eBuzima Adoption Rate** card links here.
+**Route:** _none_ (removed)  ·  **Sidebar:** _not in nav_  
+**Purpose:** e-Buzima reporting adoption vs. the expected baseline. Was briefly its own side menu
+(RI-38) but has since been **removed** — the adoption metrics now live in the **Facility Ranking**
+(Facilities page), and the Dashboard's **eBuzima Adoption Rate** card links to `/facilities`. The
+`EbuzimaAdoptionCard` component below is retained off-nav; this section documents it for reference.
 
 ### APIs Used
 

@@ -1,6 +1,6 @@
 # CCE Insights UI
 
-**Analytics dashboard** for the Clinical Care Engine (CCE) platform. Consumes REST endpoints from the CCE Insights Service to provide compliance analytics, deviation trends, event volume metrics, facility rankings, practitioner analytics, intelligence delivery monitoring, and ingestion pipeline monitoring. Compliance categories are binary: **Compliant** (`on_track`) and **Non-Compliant** (`non_compliant`). Default date range: **180 days**.
+**Analytics dashboard** for the Clinical Care Engine (CCE) platform. Consumes REST endpoints from the CCE Insights Service to provide compliance analytics, deviation trends, event volume metrics, facility rankings, practitioner analytics, intelligence delivery monitoring, and ingestion pipeline monitoring. Compliance categories are binary: **Compliant** (`on_track`) and **Non-Compliant** (`non_compliant`). Default date range: **90 days** (`VITE_DEFAULT_DATE_RANGE_DAYS`).
 
 ## Architecture
 
