@@ -244,21 +244,21 @@ export default function PatientDetail() {
                       if (!superseded) visibleRootIdx.add(i);
                     });
 
-                    return journey.filter((step, i, arr) => {
-                      if (step.status !== 'NOT_STARTED') return true;
+                    // A NOT_STARTED step is hidden only if its own root branch was superseded —
+                    // never merely because its parent action completed. Compute visibility in a
+                    // single forward pass so it cascades correctly to any nesting depth (a
+                    // NOT_STARTED step inherits its nearest ancestor's visibility).
+                    const keep = journey.map(() => true);
+                    journey.forEach((step, i) => {
+                      if (step.status !== 'NOT_STARTED') return;
                       const depth = step.depth ?? 0;
-                      if (depth === 0) return visibleRootIdx.has(i);
-                      // Sub-step: find nearest ancestor
+                      if (depth === 0) { keep[i] = visibleRootIdx.has(i); return; }
                       for (let j = i - 1; j >= 0; j--) {
-                        if ((arr[j].depth ?? 0) < depth) {
-                          // Hide if parent is completed OR parent root was filtered out
-                          if (arr[j].status === 'COMPLETED') return false;
-                          if (arr[j].status === 'NOT_STARTED' && !visibleRootIdx.has(j)) return false;
-                          break;
-                        }
+                        if ((journey[j].depth ?? 0) < depth) { keep[i] = keep[j]; break; }
                       }
-                      return true;
                     });
+
+                    return journey.filter((_step, i) => keep[i]);
                   })().map((step, i, arr) => {
                     const hasDeviation = deviationActionIds.has(step.actionId);
                     const displayStatus: JourneyDisplayStatus = hasDeviation && step.status !== 'COMPLETED' && step.status !== 'SKIPPED'
