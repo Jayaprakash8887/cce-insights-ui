@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { formatDateTime } from '../../utils/dates';
 
 interface IngestionTrendChartProps {
   data: { period: string; total: number; byStatus: Record<string, number> }[];
@@ -39,7 +40,7 @@ export function IngestionTrendChart({ data, height = 280 }: IngestionTrendChartP
         <LineChart data={data}>
           <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={50} />
-          <Tooltip />
+          <Tooltip labelFormatter={(label) => formatDateTime(label)} />
           <Legend />
           {view === 'combined' ? (
             <Line

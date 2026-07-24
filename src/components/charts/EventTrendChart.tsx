@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CHART_COLORS } from '../../utils/colors';
+import { formatDateTime } from '../../utils/dates';
 
 interface EventTrendChartProps {
   data: { period: string; total: number; byResourceType: Record<string, number> }[];
@@ -34,7 +35,7 @@ export function EventTrendChart({ data, height = 280 }: EventTrendChartProps) {
         <LineChart data={data}>
           <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={50} />
-          <Tooltip />
+          <Tooltip labelFormatter={(label) => formatDateTime(label)} />
           <Legend />
           {view === 'combined' ? (
             <Line
