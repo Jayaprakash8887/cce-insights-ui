@@ -456,7 +456,7 @@ export interface StepAnalytics {
     actionId: string;
     totalInstances: number;
     completedCount: number;
-    completionRate: number;
+    completionRate: number;        // 0–1 fraction (completedCount / totalInstances)
     timelinessDistribution: {
       completedOnTime: number;
       completedLate: number;
@@ -465,7 +465,7 @@ export interface StepAnalytics {
     missedCount: number;
     notStartedCount: number;
     slaUnjudgedCount: number;
-    avgDaysToComplete: number;
+    avgDaysToComplete: number;     // days from due date to completion; negative = early
     medianDaysToComplete: number;
   }[];
 }
