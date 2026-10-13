@@ -23,7 +23,7 @@ ARG VITE_KEYCLOAK_REALM="cce"
 ARG VITE_KEYCLOAK_CLIENT_ID="cce-insights-ui"
 # The image is served under /insights by the ingress, so the SPA router base path is /insights.
 ARG VITE_ROUTER_BASE="/insights"
-ARG VITE_TIMEZONE="Africa/Kigali"
+ARG VITE_TIMEZONE="UTC"
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
     VITE_AUTH_ENABLED=$VITE_AUTH_ENABLED \
     VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
