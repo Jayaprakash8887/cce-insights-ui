@@ -239,6 +239,9 @@ export default function ComplianceOverview() {
                 {(() => {
                   const order = actionOrder.data ?? [];
                   const titleMap = new Map(order.map((e) => [e.actionId, e.title]));
+                  // A step group (such as a visit) has no data of its own, so it always shows as a
+                  // container for its steps.
+                  const groupIds = new Set(order.filter((e) => e.group).map((e) => e.actionId));
                   const labelOf = (id: string) =>
                     titleMap.get(id) || id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -271,7 +274,9 @@ export default function ComplianceOverview() {
                               <div className="flex items-center justify-between">
                                 <h5 className="text-sm font-bold text-gray-900">{label}</h5>
                                 {node.synthetic ? (
-                                  <span className="text-[11px] font-medium text-gray-400">sub-actions only</span>
+                                  <span className="text-[11px] font-medium text-gray-400">
+                                    {groupIds.has(node.actionId) ? 'step group' : 'sub-actions only'}
+                                  </span>
                                 ) : (
                                   <span className={`text-lg font-bold ${pctColor}`}>{pct}%</span>
                                 )}
