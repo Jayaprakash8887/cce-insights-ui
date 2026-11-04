@@ -631,9 +631,24 @@ export interface JourneyStep {
   completedAt?: string | null;
   completedBySource?: string | null;
   effectiveDateTime?: string;
+  group?: boolean;                        // true for a step group, such as a visit
+  groupInstances?: GroupInstance[] | null; // a group's instances, in the order they opened
+}
+// One occurrence of a step group for the patient. A group that repeats has one per cycle.
+export interface GroupInstance {
+  groupInstanceId: string;
+  parentGroupInstanceId?: string | null;
+  cycleIndex: number;
+  status: StepDisplayStatus;  // NOT_STARTED = still open
+  openedAt: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  completedSteps: number;     // nested groups' steps included
+  totalSteps: number;
 }
 // TimelineEntry entries may also carry stepName?, state?: StepDisplayStatus | 'ENROLLED',
-// effectiveDateTime?. (2.0.0 dropped step_due / step_pending / step_skipped.)
+// effectiveDateTime?, and for a step in a group groupActionId? and cycleIndex?.
+// (2.0.0 dropped step_due / step_pending / step_skipped.)
 
 // ─── KPI / analytics additions ───────────────────────────────
 export interface EventKpis { /* cumulative event pipeline KPIs incl. pipeline loss */ }
@@ -647,7 +662,7 @@ export interface ProtocolLookup { protocolDefinitionId: string; protocolCanonica
 export interface PractitionerRanking { rank: number; practitionerId: string; practitionerName?: string; facilityId?: string; patientsServed: number; stepCompletionRate: number; stepsCompleted: number; totalSteps: number; }
 export type PractitionerRankBy = 'stepCompletion' | 'patientsServed';
 export interface PatientIntelligenceDelivery { actionId: string; status: string; destination?: string; deliveredAt?: string; /* … */ }
-export interface ActionOrderEntry { actionId: string; stepOrder: number; title?: string; trigger?: string; parentStep?: string; }
+export interface ActionOrderEntry { actionId: string; parentActionId: string | null; type: string | null; title: string | null; group?: boolean; }
 // FacilityRanking-adjacent: AtRiskHotspot now also has facilityName?; StepAnalytics steps add
 // requiredBehavior?: 'must' | 'could'; ProtocolTracking adds protocolTitle?, relatedArtifact?;
 // ProtocolTrackingDetail adds protocolDefinitionId?.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { JourneyStep } from '../api/types';
-import { isUntriggered, stepDisplayStatus, visibleJourneySteps } from './stepStatus';
+import { groupInstanceLabel, isUntriggered, stepDisplayStatus, stepsOnly, visibleJourneySteps } from './stepStatus';
 
 const step = (actionId: string, status: JourneyStep['status'], extra: Partial<JourneyStep> = {}): JourneyStep => ({
   actionId, stepName: actionId, status, completionCount: 0, ...extra,
@@ -58,5 +58,36 @@ describe('visibleJourneySteps', () => {
       step('consultation', 'OVERDUE', { stepStatus: 'NOT_STARTED', slaStatus: 'OVERDUE' }),
     ];
     expect(visibleJourneySteps(journey).map((s) => s.actionId)).toEqual(['visit', 'consultation']);
+  });
+});
+
+describe('step groups', () => {
+  it('leaves group rows out of the steps to count', () => {
+    const journey = [
+      step('registration', 'COMPLETED', { stepStatus: 'COMPLETED' }),
+      step('visit', 'NOT_STARTED', { stepStatus: 'NOT_STARTED', group: true }),
+      step('history', 'COMPLETED', { stepStatus: 'COMPLETED', depth: 1 }),
+    ];
+    expect(stepsOnly(journey).map((s) => s.actionId)).toEqual(['registration', 'history']);
+  });
+
+  it('numbers group instances by position, and only when there is more than one', () => {
+    expect(groupInstanceLabel(0, 1)).toBeNull();
+    expect(groupInstanceLabel(0, 3)).toBe('#1');
+    expect(groupInstanceLabel(2, 3)).toBe('#3');
+  });
+
+  it('treats a group that never opened as untriggered, and an open group as not', () => {
+    expect(isUntriggered(step('visit', 'NOT_STARTED', { group: true, groupInstances: [] }))).toBe(true);
+    expect(isUntriggered(step('visit', 'NOT_STARTED', { group: true, stepStatus: 'NOT_STARTED' }))).toBe(false);
+  });
+
+  it('keeps an open group and its steps visible, even when a later root step has progressed', () => {
+    const journey = [
+      step('visit', 'NOT_STARTED', { stepStatus: 'NOT_STARTED', group: true }),
+      step('bp', 'NOT_STARTED', { depth: 1 }),
+      step('discharge', 'COMPLETED', { stepStatus: 'COMPLETED' }),
+    ];
+    expect(visibleJourneySteps(journey).map((s) => s.actionId)).toEqual(['visit', 'bp', 'discharge']);
   });
 });

@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### Step groups (CCE-135)
+
+Follows cce-insights-service's step-group change. A step group is a set of steps that belong
+together, such as one visit.
+
+- **Patient Detail → Protocol Journey:** a group's row has a **Step group** badge. Under it, each of
+  its instances is listed: its number, its status (Completed, In progress, Overdue or Missed), how
+  many of its steps are done, and the day it opened. Before, a group showed as a step that never
+  started.
+- The protocol's `x/y steps` count leaves groups out.
+- **Compliance → Service Workflow Compliance:** a group shows as a container labelled "step group".
+
 ### CCE 2.0.0 step status model
 
 Follows cce-insights-service `release-2.0.0`, where a step carries two independent statuses —

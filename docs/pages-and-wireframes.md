@@ -226,6 +226,9 @@ Notes:
 > step has no data (e.g. a referral-only journey — the patient completed a `referral` sub-action but
 > no `consultation` step), the parent is **synthesized as a grouping container** ("sub-actions only",
 > no bar of its own) so the sub-action is still visible — previously the whole section rendered blank.
+>
+> A **step group**, such as a visit, never has data of its own. It always shows as such a container,
+> labelled "step group" (`group: true` in the action order).
 
 ---
 
@@ -419,6 +422,33 @@ they stay visible while a long journey on the right scrolls.
 ### Protocol Journey Visibility Rules
 
 Root steps that are untriggered — `status` `NOT_STARTED` with no `stepStatus`, i.e. no step instance yet — are suppressed when a later root step in the same protocol has progressed (any root step after them whose `status` is not `NOT_STARTED`). A step that exists but is still outstanding with no breached deadline also arrives as `NOT_STARTED`, but with `stepStatus: 'NOT_STARTED'`; the page renders it as **Pending** (blue) and never hides it. Sub-steps inherit parent visibility — a sub-step is hidden if its parent root step is hidden, ensuring orphaned sub-step entries never appear (e.g., "Laboratory Results" is not shown unless "Lab Order" is also shown). A step with an associated deviation (`ORDER_VIOLATION`/`OVERDUE`/`MISSED`) and a non-terminal status is rendered with a synthetic **DEVIATION** display status (purple).
+
+### Step groups
+
+A step group is a set of steps that belong together, such as one visit. The protocol defines it. Its
+row in the journey has a **Step group** badge, and its steps follow it, one level deeper.
+
+Under the group's name, each of its instances is listed, in the order they opened. A group that
+repeats, such as one visit per day, has one instance per cycle. Each instance shows:
+- a number (`#1`, `#2`, …), when the group opened more than once;
+- its status: **Completed**, **In progress** (still open), **Overdue** or **Missed** (the group's own
+  deadline);
+- how many of its steps are done, such as `1/2 steps`. Steps in a group nested inside it count too;
+- the day it opened.
+
+The group's own badge follows its best instance, as a step's badge does. An open group reads
+**In progress** rather than Pending. A group that never opened is **Not started**, and follows the
+visibility rules above like an untriggered step. The protocol's `x/y steps` count leaves groups out.
+
+Example: a patient with two visits. The first visit is done, and the second has history recorded but
+not BP.
+
+```
+● Visit                       [Completed] [Step group]
+  [#1 Completed · 2/2 steps · Opened Nov 2, 2026] [#2 In progress · 1/2 steps · Opened Nov 3, 2026]
+  ● History                   [Completed] ×2
+  ● Blood Pressure            [Completed]
+```
 
 ### Timeliness badges
 
