@@ -624,6 +624,25 @@ export interface PipelineLoss {
   lossRate: number;
   bySource: { source: string; lostEvents: number }[];
 }
+
+// ─── Step groups (CCE-135) ───────────────────────────────────
+// JourneyStep (PatientTimeline.protocols[].journey[]) gains:
+//   group?: boolean;                         // true for a step group, such as a visit
+//   groupInstances?: GroupInstance[] | null;  // a group's instances, in the order they opened
+// One occurrence of a step group for the patient. A group that repeats has one per cycle.
+export interface GroupInstance {
+  groupInstanceId: string;
+  parentGroupInstanceId?: string | null;
+  cycleIndex: number;
+  status: StepDisplayStatus;  // NOT_STARTED = still open
+  openedAt: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  completedSteps: number;     // nested groups' steps included
+  totalSteps: number;
+}
+// TimelineEntry may also carry, for a step in a group, groupActionId? and cycleIndex?.
+// ActionOrderEntry gains group?: boolean.
 ```
 
 ---

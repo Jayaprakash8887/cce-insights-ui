@@ -9,8 +9,8 @@ import { usePatientTimeline, usePatientProtocolTracking, usePatientProtocolTrack
 import { formatDate, formatDateTime } from '../utils/dates';
 import { formatPercentage } from '../utils/formatters';
 import { STATUS_COLORS, STATE_COLORS } from '../utils/colors';
-import type { ProtocolInstanceStatus, JourneyStep } from '../api/types';
-import { isUntriggered, stepDisplayStatus } from '../utils/stepStatus';
+import type { ProtocolInstanceStatus, JourneyStep, GroupInstance, StepDisplayStatus } from '../api/types';
+import { groupInstanceLabel, isUntriggered, stepDisplayStatus, stepsOnly } from '../utils/stepStatus';
 
 // PENDING is a UI-only state: the step exists but its event has not arrived and no deadline has
 // been breached. The API reports it as NOT_STARTED, the same as an action with no step yet, and only
@@ -35,6 +35,38 @@ const JOURNEY_STATUS: Record<JourneyDisplayStatus, { bg: string; text: string; d
   NOT_STARTED: { bg: 'bg-gray-50',   text: 'text-gray-400',   dot: 'bg-gray-300',   label: 'Not Started' },
   DEVIATION:   { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500', label: 'Deviation' },
 };
+
+/** A group instance's status. NOT_STARTED means the instance is open, so it reads "In progress". */
+const GROUP_INSTANCE_STATUS: Record<StepDisplayStatus, { label: string; style: JourneyDisplayStatus }> = {
+  COMPLETED:   { label: 'Completed',   style: 'COMPLETED' },
+  NOT_STARTED: { label: 'In progress', style: 'PENDING' },
+  OVERDUE:     { label: 'Overdue',     style: 'OVERDUE' },
+  MISSED:      { label: 'Missed',      style: 'MISSED' },
+};
+
+/** A step group's instances, such as its visits, each with how many of its steps are done. */
+function GroupInstanceList({ instances }: { instances: GroupInstance[] }) {
+  return (
+    <div className="mt-1 flex flex-wrap gap-2">
+      {instances.map((instance, position) => {
+        const status = GROUP_INSTANCE_STATUS[instance.status] ?? GROUP_INSTANCE_STATUS.NOT_STARTED;
+        const colors = JOURNEY_STATUS[status.style];
+        const label = groupInstanceLabel(position, instances.length);
+        return (
+          <span
+            key={instance.groupInstanceId}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2 py-0.5 text-xs ${colors.bg} ${colors.text}`}
+          >
+            {label && <span className="font-semibold">{label}</span>}
+            <span>{status.label}</span>
+            <span className="text-gray-500">· {instance.completedSteps}/{instance.totalSteps} steps</span>
+            <span className="text-gray-500">· Opened {formatDate(instance.openedAt)}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 const SOURCE_COLORS: Record<string, string> = {
   spice: 'bg-purple-100 text-purple-700',
@@ -311,7 +343,7 @@ export default function PatientDetail() {
                 const title = trackingMatch?.protocolTitle || proto.protocolCanonical;
                 const docArtifact = trackingMatch?.relatedArtifact?.find((a) => a.type === 'documentation');
                 const thumbnailUrl = docArtifact?.extension?.find((e) => e.url === 'http://openphc.org/fhir/thumbnail')?.valueCode;
-                const journeySteps = proto.journey ?? [];
+                const journeySteps = stepsOnly(proto.journey ?? []);
                 const completedCount = journeySteps.filter((s) => s.status === 'COMPLETED').length;
                 const protoDeviationCount = (deviations.data ?? []).filter((d) => d.protocolInstanceId === proto.protocolInstanceId).length;
 
@@ -367,7 +399,8 @@ export default function PatientDetail() {
               const docArtifact = trackingMatch?.relatedArtifact?.find((a) => a.type === 'documentation');
               const thumbnailUrl = docArtifact?.extension?.find((e) => e.url === 'http://openphc.org/fhir/thumbnail')?.valueCode;
               const journeySteps = proto.journey ?? [];
-              const completedCount = journeySteps.filter((s) => s.status === 'COMPLETED').length;
+              const countedSteps = stepsOnly(journeySteps);
+              const completedCount = countedSteps.filter((s) => s.status === 'COMPLETED').length;
               const protoDeviations = (deviations.data ?? []).filter((d) => d.protocolInstanceId === proto.protocolInstanceId);
               const protoOutbound = journeySteps.filter(isReferralInitiated);
               const protoInbound = journeySteps.filter(isReferralClosed);
@@ -416,7 +449,7 @@ export default function PatientDetail() {
                           {protoDeviations.length} deviation{protoDeviations.length > 1 ? 's' : ''}
                         </span>
                       )}
-                      <span className="text-xs text-gray-500">{completedCount}/{journeySteps.length} steps</span>
+                      <span className="text-xs text-gray-500">{completedCount}/{countedSteps.length} steps</span>
                       <span className="text-xs font-medium text-gray-700">{formatPercentage(proto.complianceRate)}</span>
                     </div>
                   </div>
@@ -441,6 +474,12 @@ export default function PatientDetail() {
                       </span>
                       <span className="text-xs text-gray-600">Required step (must)</span>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-indigo-100 text-indigo-700">
+                        Step group
+                      </span>
+                      <span className="text-xs text-gray-600">Steps that belong together, such as a visit</span>
+                    </div>
                   </div>
 
                   {deviations.isLoading && <div className="mb-3"><LoadingSpinner /></div>}
@@ -455,6 +494,8 @@ export default function PatientDetail() {
                           ? 'DEVIATION'
                           : isPending ? 'PENDING' : step.status;
                         const info = JOURNEY_STATUS[displayStatus] ?? JOURNEY_STATUS.NOT_STARTED;
+                        // An open group is in progress, not waiting to start
+                        const statusLabel = step.group && displayStatus === 'PENDING' ? 'In progress' : info.label;
                         const depth = step.depth ?? 0;
                         const isSubStep = depth > 0;
                         const isDeviation = displayStatus === 'DEVIATION';
@@ -484,19 +525,27 @@ export default function PatientDetail() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className={`${isSubStep ? 'text-sm' : 'text-base'} font-semibold ${isNotStarted ? 'text-gray-400' : 'text-gray-900'}`}>{step.stepName}</p>
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${info.bg} ${info.text}`}>
-                                  {info.label}
+                                  {statusLabel}
                                 </span>
+                                {step.group && (
+                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700">
+                                    Step group
+                                  </span>
+                                )}
                                 {step.requiredBehavior === 'must' && (
                                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700">
                                     Mandatory
                                   </span>
                                 )}
 
-                                {step.completionCount > 1 && (
+                                {!step.group && step.completionCount > 1 && (
                                   <span className="text-xs text-gray-400">×{step.completionCount}</span>
                                 )}
                               </div>
-                              <div className="mt-1 flex flex-wrap items-center gap-2">
+                              {step.group && step.groupInstances && step.groupInstances.length > 0 && (
+                                <GroupInstanceList instances={step.groupInstances} />
+                              )}
+                              {!step.group && <div className="mt-1 flex flex-wrap items-center gap-2">
                                 {step.dueDate && (step.status === 'MISSED' || step.status === 'OVERDUE' || isPending) && (
                                   <span className="text-xs text-gray-500">Due: {formatDate(step.dueDate)}</span>
                                 )}
@@ -529,7 +578,7 @@ export default function PatientDetail() {
                                 {(step.facilityName || step.facilityId) && (
                                   <span className="text-xs text-gray-500">Facility: {step.facilityName || step.facilityId}</span>
                                 )}
-                              </div>
+                              </div>}
                               {isDeviation && step.description && (
                                 <p className="mt-1 text-xs text-red-600">{step.description}</p>
                               )}

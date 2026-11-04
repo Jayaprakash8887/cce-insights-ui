@@ -159,6 +159,9 @@
 | Click patient row | Navigate to `/compliance/patients/{patientId}` |
 | Switch compliance filter tabs | Re-query patient list with `status` parameter |
 
+> A **step group**, such as a visit, has no data of its own in the Service Workflow Compliance tree.
+> Its steps show under the nearest ancestor with data, or at the top level.
+
 ---
 
 ## 3. Protocol Analytics
@@ -334,6 +337,33 @@
 ### Protocol Journey statuses
 
 Every journey step is listed. An untriggered action — `status` `NOT_STARTED` with no `stepStatus` — shows as **Not Started** (gray). A step that exists but is still outstanding with no breached deadline also arrives as `NOT_STARTED`, but with `stepStatus: 'NOT_STARTED'`; the page renders it as **Pending** (blue).
+
+### Step groups
+
+A step group is a set of steps that belong together, such as one visit. The protocol defines it. Its
+row in the journey has a **Step group** badge, and its steps follow it, one level deeper.
+
+Under the group's name, each of its instances is listed, in the order they opened. A group that
+repeats, such as one visit per day, has one instance per cycle. Each instance shows:
+- a number (`#1`, `#2`, …), when the group opened more than once;
+- its status: **Completed**, **In progress** (still open), **Overdue** or **Missed** (the group's own
+  deadline);
+- how many of its steps are done, such as `1/2 steps`. Steps in a group nested inside it count too;
+- the day it opened.
+
+The group's own badge follows its best instance, as a step's badge does. An open group reads
+**In progress** rather than Pending. A group that never opened is **Not started**, and follows the
+visibility rules above like an untriggered step. The protocol's `x/y steps` count leaves groups out.
+
+Example: a patient with two visits. The first visit is done, and the second has history recorded but
+not BP.
+
+```
+● Visit                       [Completed] [Step group]
+  [#1 Completed · 2/2 steps · Opened Nov 2, 2026] [#2 In progress · 1/2 steps · Opened Nov 3, 2026]
+  ● History                   [Completed] ×2
+  ● Blood Pressure            [Completed]
+```
 
 ### Timeliness badges
 

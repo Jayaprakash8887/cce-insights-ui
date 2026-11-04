@@ -131,6 +131,27 @@ export interface JourneyStep {
   requiredBehavior?: 'must' | 'could';
   depth?: number;
   description?: string;
+  /**
+   * true for a step group, such as a visit: a set of steps that belong together. Its steps follow
+   * it, one level deeper. Its status is that of its best instance, on a step's scale.
+   */
+  group?: boolean;
+  /** A group's instances, in the order they opened. A group that repeats has one per cycle. */
+  groupInstances?: GroupInstance[] | null;
+}
+
+/** One occurrence of a step group for the patient, such as one visit. */
+export interface GroupInstance {
+  groupInstanceId: string;
+  parentGroupInstanceId?: string | null; // the enclosing group's instance; null for a top-level group
+  cycleIndex: number;                    // 0 for the first cycle, then 1, 2, …
+  /** COMPLETED, OVERDUE / MISSED (the group's own deadline), or NOT_STARTED: still open. */
+  status: StepDisplayStatus;
+  openedAt: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  completedSteps: number;                // done steps in it, nested groups included
+  totalSteps: number;                    // all steps in it so far, nested groups included
 }
 
 export interface TimelineEntry {
@@ -145,6 +166,8 @@ export interface TimelineEntry {
   source?: string;
   daysOverdue?: number;
   effectiveDateTime?: string;
+  groupActionId?: string | null;  // the step's group; null for a step in no group
+  cycleIndex?: number | null;     // which instance of that group
 }
 
 export interface RelatedArtifactExtension {
@@ -417,6 +440,8 @@ export interface ActionOrderEntry {
   parentActionId: string | null;
   type: string | null;
   title: string | null;
+  /** true for a step group (such as a visit). A group has no step data of its own. */
+  group?: boolean;
 }
 
 export interface CompletionFunnel {
