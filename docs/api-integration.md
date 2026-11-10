@@ -289,6 +289,17 @@ export interface StepInstance {
   completedAt?: string;
   completedBySource?: string;
   daysOverdue?: number;
+  groupPath?: GroupPathEntry[];     // the visit it is in; empty for a step in no group
+}
+
+// One group instance around a step instance, such as "Outpatient Visit #2". One entry per level,
+// from the top-level group in. Also on PatientDeviation and DeviationRecord.
+export interface GroupPathEntry {
+  groupActionId: string;
+  groupName: string;
+  groupInstanceId: string;
+  number?: number | null;   // place among its group's instances in the same parent instance; null when only one
+  openedAt: string;
 }
 
 export type StepStatus = 'NOT_STARTED' | 'COMPLETED';

@@ -23,6 +23,13 @@ vi.mock('../hooks/useProtocols', () => ({
         slaUnjudgedCount: 14,
         avgDaysToComplete: -1.5,
         medianDaysToComplete: -1,
+        // One per visit: the 19 patients had 40 visits between them.
+        stepInstanceCount: 40,
+        completedStepInstanceCount: 12,
+      }],
+      groups: [{
+        groupActionId: 'outpatient-visit', title: 'Outpatient Visit', patientCount: 19,
+        instanceCount: 40, completedInstanceCount: 30, completionRate: 0.75,
       }],
     },
     isLoading: false,
@@ -54,5 +61,23 @@ describe('ProtocolAnalytics — step table', () => {
     renderPage();
     expect(screen.getByText('Avg Days vs Due')).toBeInTheDocument();
     expect(screen.getByText('-1.5')).toBeInTheDocument();
+  });
+
+  it('counts patients and visits apart, for a step in a group that repeats', () => {
+    renderPage();
+    expect(screen.getByText('Patients Completed')).toBeInTheDocument();
+    expect(screen.getByText('5/19')).toBeInTheDocument();
+    expect(screen.getByText('Visits Completed')).toBeInTheDocument();
+    expect(screen.getByText('12/40')).toBeInTheDocument();
+  });
+
+  it('lists each step group with its patients, its instances and how many are completed', () => {
+    renderPage();
+    expect(screen.getByText('Step Groups')).toBeInTheDocument();
+    const row = screen.getByText('Outpatient Visit').closest('tr')!;
+    expect(row).toHaveTextContent('19');
+    expect(row).toHaveTextContent('40(2.1 per patient)');
+    expect(row).toHaveTextContent('30');
+    expect(row).toHaveTextContent('75.0%');
   });
 });

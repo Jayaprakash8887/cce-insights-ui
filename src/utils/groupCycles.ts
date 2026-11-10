@@ -1,4 +1,5 @@
-import type { GroupInstance, JourneyStep, JourneyStepInstance, StepDisplayStatus } from '../api/types';
+import type { GroupInstance, GroupPathEntry, JourneyStep, JourneyStepInstance, StepDisplayStatus } from '../api/types';
+import { formatDate } from './dates';
 
 // A step group that repeats, such as one visit per day, has one instance per cycle. The journey's
 // rows merge every cycle. These helpers show one cycle of each group at a time: the one the user
@@ -146,4 +147,47 @@ function notStarted(row: JourneyStep): JourneyStep {
     facilityName: undefined,
     description: undefined,
   };
+}
+
+// ── Naming a group instance ──
+
+/**
+ * A group instance's name: its number and the day it opened, such as "#2 · Sep 6, 2026", or only the
+ * day when its group opened once.
+ */
+export function groupInstanceName(number: number | null | undefined, openedAt: string): string {
+  return number ? `#${number} · ${formatDate(openedAt)}` : formatDate(openedAt);
+}
+
+/**
+ * Which visit a step instance is in, in words: "Outpatient Visit #2 (Sep 6, 2026) › Clinical
+ * Consultation". Only the top-level group gets its day. Empty for a step in no group.
+ */
+export function groupPathLabel(path: GroupPathEntry[] | null | undefined): string {
+  return (path ?? [])
+    .map((entry, level) =>
+      `${entry.groupName}${entry.number ? ` #${entry.number}` : ''}${level === 0 ? ` (${formatDate(entry.openedAt)})` : ''}`)
+    .join(' › ');
+}
+
+/** The pick that shows a group path: each of its groups at the instance it names. */
+export function selectionFor(path: GroupPathEntry[] | null | undefined): CycleSelection {
+  return Object.fromEntries((path ?? []).map((entry) => [entry.groupActionId, entry.groupInstanceId]));
+}
+
+/** A pick as a URL value, "visit:id,consultation:id", so a link can open a patient at a visit. */
+export function selectionToParam(selection: CycleSelection): string {
+  return Object.entries(selection).map(([groupActionId, groupInstanceId]) => `${groupActionId}:${groupInstanceId}`).join(',');
+}
+
+/** The pick a URL value names. Anything malformed is left out. */
+export function selectionFromParam(value: string | null): CycleSelection {
+  const selection: CycleSelection = {};
+  for (const part of (value ?? '').split(',')) {
+    const separator = part.lastIndexOf(':');
+    if (separator > 0 && separator < part.length - 1) {
+      selection[part.slice(0, separator)] = part.slice(separator + 1);
+    }
+  }
+  return selection;
 }
