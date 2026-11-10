@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { JourneyStep } from '../api/types';
 import PatientDetail from './PatientDetail';
@@ -16,8 +16,22 @@ const journey: JourneyStep[] = [
       { groupInstanceId: 'g1', cycleIndex: 1, status: 'NOT_STARTED', openedAt: '2026-11-03T09:00:00Z', completedSteps: 1, totalSteps: 2 },
     ],
   },
-  { actionId: 'history', stepName: 'History', status: 'COMPLETED', stepStatus: 'COMPLETED', completionCount: 2, depth: 1 },
-  { actionId: 'bp', stepName: 'Blood Pressure', status: 'COMPLETED', stepStatus: 'COMPLETED', completionCount: 1, depth: 1 },
+  {
+    actionId: 'history', parentActionId: 'visit', stepName: 'History', status: 'COMPLETED', stepStatus: 'COMPLETED',
+    completionCount: 2, depth: 1,
+    instances: [
+      { stepInstanceId: 'h0', groupInstanceId: 'g0', status: 'COMPLETED', stepStatus: 'COMPLETED', practitioner: 'Dr. First' },
+      { stepInstanceId: 'h1', groupInstanceId: 'g1', status: 'COMPLETED', stepStatus: 'COMPLETED', practitioner: 'Dr. Second' },
+    ],
+  },
+  {
+    actionId: 'bp', parentActionId: 'visit', stepName: 'Blood Pressure', status: 'COMPLETED', stepStatus: 'COMPLETED',
+    completionCount: 1, depth: 1,
+    instances: [
+      { stepInstanceId: 'b0', groupInstanceId: 'g0', status: 'COMPLETED', stepStatus: 'COMPLETED', slaStatus: 'MET' },
+      { stepInstanceId: 'b1', groupInstanceId: 'g1', status: 'NOT_STARTED', stepStatus: 'NOT_STARTED' },
+    ],
+  },
 ];
 
 const none = { data: undefined, isLoading: false, error: null };
@@ -68,7 +82,28 @@ describe('PatientDetail — step groups in the Protocol Journey', () => {
     expect(within(visitRow).getByText('#2')).toBeInTheDocument();
     expect(within(visitRow).getByText('· 2/2 steps')).toBeInTheDocument();
     expect(within(visitRow).getByText('· 1/2 steps')).toBeInTheDocument();
-    expect(within(visitRow).getByText('In progress')).toBeInTheDocument();
+    // The row shows the latest visit, which is open, and so does its chip.
+    expect(within(visitRow).getAllByText('In progress')).toHaveLength(2);
+  });
+
+  it('shows the latest visit\'s steps first, and another visit\'s steps when its chip is picked', () => {
+    renderPage();
+    const chip = (label: string) => screen.getByText(label).closest('button')!;
+    const bpRow = () => screen.getByText('Blood Pressure').parentElement!.parentElement!;
+
+    // Visit #2: history done by Dr. Second, blood pressure still awaited.
+    expect(chip('#2')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Practitioner: Dr. Second')).toBeInTheDocument();
+    expect(within(bpRow()).getByText('Pending')).toBeInTheDocument();
+
+    fireEvent.click(chip('#1'));
+
+    expect(chip('#1')).toHaveAttribute('aria-pressed', 'true');
+    expect(chip('#2')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Practitioner: Dr. First')).toBeInTheDocument();
+    expect(screen.queryByText('Practitioner: Dr. Second')).not.toBeInTheDocument();
+    expect(within(bpRow()).getByText('Completed')).toBeInTheDocument();
+    expect(within(bpRow()).getByText('ON TIME')).toBeInTheDocument();
   });
 
   it('counts steps only, not the group, in the protocol header', () => {
