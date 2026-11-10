@@ -19,6 +19,7 @@ import { getDeviations } from '../api/deviations';
 import { formatNumber } from '../utils/formatters';
 import { formatDate } from '../utils/dates';
 import { INTERVAL_OPTIONS } from '../config';
+import { groupPathLabel, selectionFor, selectionToParam } from '../utils/groupCycles';
 
 export default function Deviations() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -295,6 +296,7 @@ export default function Deviations() {
                   <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                     <th className="pb-2 pr-4">Patient</th>
                     <th className="pb-2 pr-4">Action</th>
+                    <th className="pb-2 pr-4">Visit</th>
                     <th className="pb-2 pr-4">Type</th>
                     <th className="pb-2 pr-4">Facility</th>
                     <th className="pb-2 pr-4">Occurred</th>
@@ -306,13 +308,16 @@ export default function Deviations() {
                     <tr key={d.deviationId} className="hover:bg-gray-50">
                       <td className="py-2 pr-4">
                         <Link
-                          to={`/compliance/patients/${encodeURIComponent(d.patientId)}?protocolInstanceId=${encodeURIComponent(d.protocolInstanceId)}`}
+                          // Opens the patient at the visit the deviation is in.
+                          to={`/compliance/patients/${encodeURIComponent(d.patientId)}?protocolInstanceId=${encodeURIComponent(d.protocolInstanceId)}${
+                            d.groupPath?.length ? `&visit=${encodeURIComponent(selectionToParam(selectionFor(d.groupPath)))}` : ''}`}
                           className="font-medium text-blue-600 hover:text-blue-700"
                         >
                           {d.patientId}
                         </Link>
                       </td>
                       <td className="py-2 pr-4">{getActionName(d.actionId)}</td>
+                      <td className="py-2 pr-4 text-gray-600">{groupPathLabel(d.groupPath) || '—'}</td>
                       <td className="py-2 pr-4">
                         <span className={`text-xs font-bold ${d.deviationType === 'OVERDUE' ? 'text-amber-600' : d.deviationType === 'ORDER_VIOLATION' ? 'text-purple-600' : 'text-red-600'}`}>
                           {d.deviationType}

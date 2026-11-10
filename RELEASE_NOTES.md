@@ -18,6 +18,16 @@ together, such as one visit.
   and facility. A nested group lists only its instances inside the shown visit. Before, a step merged
   every visit, such as "Patient Visit ×2". Needs cce-insights-service's `instances[]` on journey
   rows; without it, steps merge every visit as before.
+- **Which visit** (needs cce-insights-service's `groupPath`):
+  - Patient Detail: each deviation says which visit it is in, such as "In Outpatient Visit #2
+    (Sep 6, 2026)", with **Show this visit**. The Step Details table has a Visit column.
+  - Deviations: the list has a Visit column, and the patient link opens that visit.
+- Group instances are named by number and day, such as `#2 · Sep 6, 2026`.
+- The header's `x/y steps` says `· all visits` when a group has more than one instance, since the
+  journey shows one at a time.
+- **Protocol Analytics:** the step table counts patients (**Patients Completed**) and visits
+  (**Visits Completed**) apart. A new **Step Groups** card shows each group's patients, instances
+  and completed instances.
 - The protocol's `x/y steps` count leaves groups out.
 - **Compliance → Service Workflow Compliance:** a group shows as a container labelled "step group".
 

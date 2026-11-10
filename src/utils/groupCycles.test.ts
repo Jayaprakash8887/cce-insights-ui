@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GroupInstance, JourneyStep } from '../api/types';
-import { showCycles } from './groupCycles';
+import { groupInstanceName, groupPathLabel, selectionFor, selectionFromParam, selectionToParam, showCycles } from './groupCycles';
 
 // An outpatient visit, one per day, with a consultation group nested in it. The patient came twice.
 // Visit 1 is done. Visit 2 has its patient-visit step done and its vitals still awaited, and its
@@ -110,5 +110,31 @@ describe('showCycles', () => {
     const older = journey.map(({ instances: _instances, ...rest }) => rest);
     const view = showCycles(older, {});
     expect(row(view.steps, 'patient-visit')).toBe(older[2]);
+  });
+});
+
+describe('naming a visit', () => {
+  const path = [
+    { groupActionId: 'visit', groupName: 'Outpatient Visit', groupInstanceId: 'v2', number: 2, openedAt: '2026-09-06T08:00:00Z' },
+    { groupActionId: 'consultation', groupName: 'Clinical Consultation', groupInstanceId: 'c3', number: null, openedAt: '2026-09-06T09:00:00Z' },
+  ];
+
+  it('names a group instance by its number and day, or its day alone', () => {
+    expect(groupInstanceName(2, '2026-09-06T08:00:00Z')).toBe('#2 · Sep 6, 2026');
+    expect(groupInstanceName(null, '2026-09-06T08:00:00Z')).toBe('Sep 6, 2026');
+  });
+
+  it('names the visit a step is in, with the day only on the top-level group', () => {
+    expect(groupPathLabel(path)).toBe('Outpatient Visit #2 (Sep 6, 2026) › Clinical Consultation');
+    expect(groupPathLabel([])).toBe('');
+    expect(groupPathLabel(undefined)).toBe('');
+  });
+
+  it('turns a visit into a pick, and a pick into a link value and back', () => {
+    const selection = selectionFor(path);
+    expect(selection).toEqual({ visit: 'v2', consultation: 'c3' });
+    expect(selectionFromParam(selectionToParam(selection))).toEqual(selection);
+    expect(selectionFromParam('broken,:x,y:,ok:1')).toEqual({ ok: '1' });
+    expect(selectionFromParam(null)).toEqual({});
   });
 });
