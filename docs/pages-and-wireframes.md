@@ -351,19 +351,35 @@ repeats, such as one visit per day, has one instance per cycle. Each instance sh
 - how many of its steps are done, such as `1/2 steps`. Steps in a group nested inside it count too;
 - the day it opened.
 
-The group's own badge follows its best instance, as a step's badge does. An open group reads
-**In progress** rather than Pending. A group that never opened is **Not started**, and follows the
-visibility rules above like an untriggered step. The protocol's `x/y steps` count leaves groups out.
+**One cycle at a time.** The steps under a group show one of its instances, not all of them merged:
+- By default, the latest instance is shown.
+- When a group has more than one instance, each instance is a button. Click one to show its steps.
+  The shown instance has a blue ring.
+- The group's badge, and each step's badge, time, SLA badge, practitioner and facility, come from the
+  shown instance.
+- A step with nothing in the shown instance reads **Not started**.
+- A nested group, such as a consultation inside a visit, lists only its instances inside the shown
+  visit. It is numbered from `#1` inside each visit. With none in that visit, it reads **Not started**.
+- A step under another step, such as lab results under lab order, follows the group around them both.
+- Deviation highlights count only step instances in the shown instances, or in no group.
+- Picking another protocol goes back to the latest instances.
+- An API without `instances[]` on step rows still works: the steps then merge every cycle, as before.
 
-Example: a patient with two visits. The first visit is done, and the second has history recorded but
-not BP.
+An open group reads **In progress** rather than Pending. A group that never opened is
+**Not started**, and follows the visibility rules above like an untriggered step. The protocol's
+`x/y steps` count and its deviation count still cover every cycle, and leave groups out.
+
+Example: a patient with two visits. The first visit is done. The second has history recorded but not
+BP. Visit #2 is shown, as the latest:
 
 ```
-● Visit                       [Completed] [Step group]
-  [#1 Completed · 2/2 steps · Opened Nov 2, 2026] [#2 In progress · 1/2 steps · Opened Nov 3, 2026]
-  ● History                   [Completed] ×2
-  ● Blood Pressure            [Completed]
+● Visit                       [In progress] [Step group]
+  [#1 Completed · 2/2 steps · Opened Nov 2, 2026] ((#2 In progress · 1/2 steps · Opened Nov 3, 2026))
+  ● History                   [Completed]
+  ● Blood Pressure            [Pending]
 ```
+
+Clicking `#1` shows the first visit: Visit and both steps read **Completed**.
 
 ### Timeliness badges
 

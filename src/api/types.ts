@@ -138,6 +138,28 @@ export interface JourneyStep {
   group?: boolean;
   /** A group's instances, in the order they opened. A group that repeats has one per cycle. */
   groupInstances?: GroupInstance[] | null;
+  /**
+   * A step's step instances, one by one, each with the group instance it is in. The row's own fields
+   * merge them all; these let the page show one cycle of a group at a time. Null on a group's row,
+   * and absent from an API that predates them.
+   */
+  instances?: JourneyStepInstance[] | null;
+}
+
+/** One step instance of a step's journey row, such as the step in one visit. */
+export interface JourneyStepInstance {
+  stepInstanceId: string;
+  groupInstanceId?: string | null;  // the group instance it is in; null for a step in no group
+  status: StepDisplayStatus;
+  stepStatus?: StepStatus | null;
+  slaStatus?: SlaStatus | null;
+  effectiveDateTime?: string;
+  dueDate?: string;
+  source?: string;
+  practitioner?: string;
+  facilityId?: string;
+  facilityName?: string;
+  description?: string;             // its deviation, in words
 }
 
 /** One occurrence of a step group for the patient, such as one visit. */

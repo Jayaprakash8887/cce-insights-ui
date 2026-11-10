@@ -13,6 +13,11 @@ together, such as one visit.
   its instances is listed: its number, its status (Completed, In progress, Overdue or Missed), how
   many of its steps are done, and the day it opened. Before, a group showed as a step that never
   started.
+- **One visit at a time:** the steps under a group show one of its instances, the latest by default.
+  Click an instance (`#1`, `#2`, …) to show that visit's steps: their status, time, SLA, practitioner
+  and facility. A nested group lists only its instances inside the shown visit. Before, a step merged
+  every visit, such as "Patient Visit ×2". Needs cce-insights-service's `instances[]` on journey
+  rows; without it, steps merge every visit as before.
 - The protocol's `x/y steps` count leaves groups out.
 - **Compliance → Service Workflow Compliance:** a group shows as a container labelled "step group".
 

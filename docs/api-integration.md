@@ -629,6 +629,19 @@ export interface PipelineLoss {
 // JourneyStep (PatientTimeline.protocols[].journey[]) gains:
 //   group?: boolean;                         // true for a step group, such as a visit
 //   groupInstances?: GroupInstance[] | null;  // a group's instances, in the order they opened
+//   instances?: JourneyStepInstance[] | null; // a step's step instances, each with its group instance
+// One step instance of a step's row, such as the step in one visit. PatientDetail shows the one in
+// the group instance picked for its group (utils/groupCycles.ts).
+export interface JourneyStepInstance {
+  stepInstanceId: string;
+  groupInstanceId?: string | null;  // null for a step in no group
+  status: StepDisplayStatus;
+  stepStatus?: StepStatus | null;
+  slaStatus?: SlaStatus | null;
+  effectiveDateTime?: string; dueDate?: string; source?: string;
+  practitioner?: string; facilityId?: string; facilityName?: string;
+  description?: string;             // its deviation, in words
+}
 // One occurrence of a step group for the patient. A group that repeats has one per cycle.
 export interface GroupInstance {
   groupInstanceId: string;
