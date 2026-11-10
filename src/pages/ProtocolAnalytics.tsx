@@ -43,8 +43,9 @@ export default function ProtocolAnalytics() {
               <thead>
                 <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                   <th className="pb-2 pr-4">Action</th>
-                  <th className="pb-2 pr-4">Completed</th>
+                  <th className="pb-2 pr-4" title="Patients who completed the step at least once, of the patients who have it. A patient counts once, however many visits they had.">Patients Completed</th>
                   <th className="pb-2 pr-4">Rate</th>
+                  <th className="pb-2 pr-4" title="Step instances completed, of all of them. A step in a step group that repeats, such as one visit per day, has one per visit, so this shows how often it is done per visit.">Visits Completed</th>
                   <th className="pb-2 pr-4">On Time</th>
                   <th className="pb-2 pr-4">Late</th>
                   <th className="pb-2" title="Average of completion date minus due date, for completed steps that have a due date">Avg vs Due</th>
@@ -64,9 +65,58 @@ export default function ProtocolAnalytics() {
                         <span>{formatRate(s.completionRate)}</span>
                       </div>
                     </td>
+                    <td className="py-2 pr-4">
+                      {s.stepInstanceCount != null
+                        ? `${formatNumber(s.completedStepInstanceCount ?? 0)}/${formatNumber(s.stepInstanceCount)}`
+                        : '—'}
+                    </td>
                     <td className="py-2 pr-4">{formatNumber(s.timelinessDistribution.completedOnTime)}</td>
                     <td className="py-2 pr-4 text-amber-600">{formatNumber(s.timelinessDistribution.completedLate)}</td>
                     <td className="py-2 text-gray-600">{formatDaysVsDue(s.avgDaysToComplete)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {steps.data?.groups && steps.data.groups.length > 0 && (
+        <Card title="Step Groups" className="mt-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
+                  <th className="pb-2 pr-4">Group</th>
+                  <th className="pb-2 pr-4">Patients</th>
+                  <th className="pb-2 pr-4" title="Each time the group opened for a patient, such as each visit. A group inside another group opens once per instance of its parent.">Instances</th>
+                  <th className="pb-2 pr-4" title="Instances with every step in them so far done, including the steps of the groups inside them, or that the Matcher recorded as complete.">Completed</th>
+                  <th className="pb-2">Rate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {steps.data.groups.map((g) => (
+                  <tr key={g.groupActionId} className="hover:bg-gray-50">
+                    <td className="py-2 pr-4 font-medium text-gray-900">
+                      {g.title}
+                      <span className="ml-1 font-mono text-[10px] text-gray-400">{g.groupActionId}</span>
+                    </td>
+                    <td className="py-2 pr-4">{formatNumber(g.patientCount)}</td>
+                    <td className="py-2 pr-4">
+                      {formatNumber(g.instanceCount)}
+                      {g.patientCount > 0 && (
+                        <span className="ml-1 text-xs text-gray-400">({(g.instanceCount / g.patientCount).toFixed(1)} per patient)</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-4">{formatNumber(g.completedInstanceCount)}</td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-200">
+                          <div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, g.completionRate * 100)}%` }} />
+                        </div>
+                        <span>{formatRate(g.completionRate)}</span>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -159,6 +159,9 @@
 | Click patient row | Navigate to `/compliance/patients/{patientId}` |
 | Switch compliance filter tabs | Re-query patient list with `status` parameter |
 
+> A **step group**, such as a visit, has no data of its own in the Service Workflow Compliance tree.
+> Its steps show under the nearest ancestor with data, or at the top level.
+
 ---
 
 ## 3. Protocol Analytics
@@ -231,6 +234,25 @@
 | Late | `timelinessDistribution.completedLate` | Count (completed + SLA overdue/missed), highlighted amber |
 | Avg vs Due | `avgDaysToComplete` | Average of `completed_at − due_date` in days, shown as "N d early" / "N d late" (negative = before the due date) |
 | Median | `medianDaysToComplete` | Median days (tooltip) |
+
+The table shows two counts for each step:
+- **Patients Completed** (`completedCount / totalInstances`) counts patients. A patient counts once,
+  however many visits they had.
+- **Visits Completed** (`completedStepInstanceCount / stepInstanceCount`) counts step instances. A step
+  in a step group that repeats, such as one visit per day, has one per visit. So this shows how often
+  it is done per visit. A patient who did vitals in visit 1 and skipped it in visits 2 to 5 counts as
+  completed under Patients Completed, but only 1/5 here.
+
+**Step Groups card.** It is shown below the table when the protocol has step groups. It has one row
+per group, in protocol order:
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Group | `groups[].title` | With the group's action id |
+| Patients | `patientCount` | Patients with at least one instance |
+| Instances | `instanceCount` | Each time the group opened, such as each visit. Also shown per patient. |
+| Completed | `completedInstanceCount` | Every step in it so far done, nested groups' steps included, or recorded complete |
+| Rate | `completionRate` | Bar; 0–1 from the API, shown ×100 |
 
 ---
 
@@ -335,6 +357,62 @@
 
 Every journey step is listed. An untriggered action — `status` `NOT_STARTED` with no `stepStatus` — shows as **Not Started** (gray). A step that exists but is still outstanding with no breached deadline also arrives as `NOT_STARTED`, but with `stepStatus: 'NOT_STARTED'`; the page renders it as **Pending** (blue).
 
+### Step groups
+
+A step group is a set of steps that belong together, such as one visit. The protocol defines it. Its
+row in the journey has a **Step group** badge, and its steps follow it, one level deeper.
+
+Under the group's name, each of its instances is listed, in the order they opened. A group that
+repeats, such as one visit per day, has one instance per cycle. Each instance shows:
+- a number (`#1`, `#2`, …), when the group opened more than once;
+- its status: **Completed**, **In progress** (still open), **Overdue** or **Missed** (the group's own
+  deadline);
+- how many of its steps are done, such as `1/2 steps`. Steps in a group nested inside it count too;
+- the day it opened.
+
+**One cycle at a time.** The steps under a group show one of its instances, not all of them merged:
+- By default, the latest instance is shown.
+- When a group has more than one instance, each instance is a button. Click one to show its steps.
+  The shown instance has a blue ring.
+- The group's badge, and each step's badge, time, SLA badge, practitioner and facility, come from the
+  shown instance.
+- A step with nothing in the shown instance reads **Not started**.
+- A nested group, such as a consultation inside a visit, lists only its instances inside the shown
+  visit. It is numbered from `#1` inside each visit. With none in that visit, it reads **Not started**.
+- A step under another step, such as lab results under lab order, follows the group around them both.
+- Deviation highlights count only step instances in the shown instances, or in no group.
+- Picking another protocol goes back to the latest instances.
+- An API without `instances[]` on step rows still works: the steps then merge every cycle, as before.
+
+- A link can open the page at a visit: `?visit=groupActionId:groupInstanceId,…`. The Deviations page
+  uses it.
+
+An instance is named by its number and the day it opened, such as `#2 · Nov 3, 2026`. A group that
+opened once shows only the day.
+
+An open group reads **In progress** rather than Pending. A group that never opened is
+**Not started**, and follows the visibility rules above like an untriggered step. The protocol's
+`x/y steps` count and its deviation count still cover every cycle, and leave groups out. When a
+group has more than one instance, the header says so: `3/3 steps · all visits`.
+
+**Which visit.** Other parts of the page name the visit a step instance is in, from its `groupPath`,
+such as `Outpatient Visit #2 (Sep 6, 2026) › Clinical Consultation`:
+- Each card in **Deviations** says "In …" for a step in a group. When that visit isn't the one shown,
+  **Show this visit** shows it. Otherwise the card says "shown above".
+- The **Step Details** table has a **Visit** column.
+
+Example: a patient with two visits. The first visit is done. The second has history recorded but not
+BP. Visit #2 is shown, as the latest:
+
+```
+● Visit                       [In progress] [Step group]
+  [#1 · Nov 2, 2026 · Completed · 2/2 steps] ((#2 · Nov 3, 2026 · In progress · 1/2 steps))
+  ● History                   [Completed]
+  ● Blood Pressure            [Pending]
+```
+
+Clicking `#1` shows the first visit: Visit and both steps read **Completed**.
+
 ### Timeliness badges
 
 Each completed journey step shows a timeliness badge read from the CCE 2.0.0 status pair:
@@ -407,6 +485,10 @@ never for an optional step) shows no timeliness badge. 1.x's `EARLY` has no 2.0.
 │         │  └───────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Step groups:** the Deviation List has a **Visit** column, such as `Outpatient Visit #2
+> (Sep 6, 2026)`, for a step in a step group, and `—` otherwise. The patient link opens the patient at
+> that visit.
 
 ---
 

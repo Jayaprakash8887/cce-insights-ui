@@ -131,6 +131,49 @@ export interface JourneyStep {
   requiredBehavior?: 'must' | 'could';
   depth?: number;
   description?: string;
+  /**
+   * true for a step group, such as a visit: a set of steps that belong together. Its steps follow
+   * it, one level deeper. Its status is that of its best instance, on a step's scale.
+   */
+  group?: boolean;
+  /** A group's instances, in the order they opened. A group that repeats has one per cycle. */
+  groupInstances?: GroupInstance[] | null;
+  /**
+   * A step's step instances, one by one, each with the group instance it is in. The row's own fields
+   * merge them all; these let the page show one cycle of a group at a time. Null on a group's row,
+   * and absent from an API that predates them.
+   */
+  instances?: JourneyStepInstance[] | null;
+}
+
+/** One step instance of a step's journey row, such as the step in one visit. */
+export interface JourneyStepInstance {
+  stepInstanceId: string;
+  groupInstanceId?: string | null;  // the group instance it is in; null for a step in no group
+  status: StepDisplayStatus;
+  stepStatus?: StepStatus | null;
+  slaStatus?: SlaStatus | null;
+  effectiveDateTime?: string;
+  dueDate?: string;
+  source?: string;
+  practitioner?: string;
+  facilityId?: string;
+  facilityName?: string;
+  description?: string;             // its deviation, in words
+}
+
+/** One occurrence of a step group for the patient, such as one visit. */
+export interface GroupInstance {
+  groupInstanceId: string;
+  parentGroupInstanceId?: string | null; // the enclosing group's instance; null for a top-level group
+  cycleIndex: number;                    // 0 for the first cycle, then 1, 2, …
+  /** COMPLETED, OVERDUE / MISSED (the group's own deadline), or NOT_STARTED: still open. */
+  status: StepDisplayStatus;
+  openedAt: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  completedSteps: number;                // done steps in it, nested groups included
+  totalSteps: number;                    // all steps in it so far, nested groups included
 }
 
 export interface TimelineEntry {
@@ -145,6 +188,8 @@ export interface TimelineEntry {
   source?: string;
   daysOverdue?: number;
   effectiveDateTime?: string;
+  groupActionId?: string | null;  // the step's group; null for a step in no group
+  cycleIndex?: number | null;     // which instance of that group
 }
 
 export interface RelatedArtifactExtension {
@@ -194,6 +239,7 @@ export interface StepInstance {
   completedAt?: string;
   completedBySource?: string;
   daysOverdue?: number;
+  groupPath?: GroupPathEntry[];     // the visit it is in; empty for a step in no group
 }
 
 /** Did the expected event arrive? */
@@ -234,6 +280,19 @@ export interface PatientDeviation {
     backfilled?: boolean;
   };
   description?: string;
+  groupPath?: GroupPathEntry[];      // the visit its step is in; empty for a step in no group
+}
+
+/**
+ * One group instance around a step instance, such as "Outpatient Visit #2". A step in a nested
+ * group has one entry per level, from the top-level group in.
+ */
+export interface GroupPathEntry {
+  groupActionId: string;
+  groupName: string;
+  groupInstanceId: string;
+  number?: number | null;   // its place among its group's instances in the same parent instance; null when it is the only one
+  openedAt: string;
 }
 
 export type DeviationType = 'OVERDUE' | 'MISSED' | 'ORDER_VIOLATION';
@@ -251,6 +310,7 @@ export interface DeviationRecord {
   occurredAt: string;   // clinical occurrence date (when the deviation happened)
   detectedAt: string;   // system detection date (when we flagged it)
   facilityId: string;
+  groupPath?: GroupPathEntry[];  // the visit its step is in; empty for a step in no group
 }
 
 export interface DeviationTrend {
@@ -409,6 +469,17 @@ export interface StepAnalytics {
     avgDaysToComplete: number;
     medianDaysToComplete: number;
     requiredBehavior?: 'must' | 'could';
+    stepInstanceCount?: number;            // step instances: one per visit for a step in a repeating group
+    completedStepInstanceCount?: number;
+  }[];
+  /** One per step group, such as a visit, in protocol order. */
+  groups?: {
+    groupActionId: string;
+    title: string;
+    patientCount: number;
+    instanceCount: number;            // its instances, such as visits
+    completedInstanceCount: number;
+    completionRate: number;           // 0–1
   }[];
 }
 
@@ -417,6 +488,8 @@ export interface ActionOrderEntry {
   parentActionId: string | null;
   type: string | null;
   title: string | null;
+  /** true for a step group (such as a visit). A group has no step data of its own. */
+  group?: boolean;
 }
 
 export interface CompletionFunnel {
