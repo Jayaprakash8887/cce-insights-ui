@@ -239,6 +239,7 @@ export interface StepInstance {
   completedAt?: string;
   completedBySource?: string;
   daysOverdue?: number;
+  groupPath?: GroupPathEntry[];     // the visit it is in; empty for a step in no group
 }
 
 /** Did the expected event arrive? */
@@ -279,6 +280,19 @@ export interface PatientDeviation {
     backfilled?: boolean;
   };
   description?: string;
+  groupPath?: GroupPathEntry[];      // the visit its step is in; empty for a step in no group
+}
+
+/**
+ * One group instance around a step instance, such as "Outpatient Visit #2". A step in a nested
+ * group has one entry per level, from the top-level group in.
+ */
+export interface GroupPathEntry {
+  groupActionId: string;
+  groupName: string;
+  groupInstanceId: string;
+  number?: number | null;   // its place among its group's instances in the same parent instance; null when it is the only one
+  openedAt: string;
 }
 
 export type DeviationType = 'OVERDUE' | 'MISSED' | 'ORDER_VIOLATION';
@@ -296,6 +310,7 @@ export interface DeviationRecord {
   occurredAt: string;   // clinical occurrence date (when the deviation happened)
   detectedAt: string;   // system detection date (when we flagged it)
   facilityId: string;
+  groupPath?: GroupPathEntry[];  // the visit its step is in; empty for a step in no group
 }
 
 export interface DeviationTrend {
@@ -454,6 +469,17 @@ export interface StepAnalytics {
     avgDaysToComplete: number;
     medianDaysToComplete: number;
     requiredBehavior?: 'must' | 'could';
+    stepInstanceCount?: number;            // step instances: one per visit for a step in a repeating group
+    completedStepInstanceCount?: number;
+  }[];
+  /** One per step group, such as a visit, in protocol order. */
+  groups?: {
+    groupActionId: string;
+    title: string;
+    patientCount: number;
+    instanceCount: number;            // its instances, such as visits
+    completedInstanceCount: number;
+    completionRate: number;           // 0–1
   }[];
 }
 

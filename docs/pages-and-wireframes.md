@@ -235,6 +235,25 @@
 | Avg vs Due | `avgDaysToComplete` | Average of `completed_at − due_date` in days, shown as "N d early" / "N d late" (negative = before the due date) |
 | Median | `medianDaysToComplete` | Median days (tooltip) |
 
+The table shows two counts for each step:
+- **Patients Completed** (`completedCount / totalInstances`) counts patients. A patient counts once,
+  however many visits they had.
+- **Visits Completed** (`completedStepInstanceCount / stepInstanceCount`) counts step instances. A step
+  in a step group that repeats, such as one visit per day, has one per visit. So this shows how often
+  it is done per visit. A patient who did vitals in visit 1 and skipped it in visits 2 to 5 counts as
+  completed under Patients Completed, but only 1/5 here.
+
+**Step Groups card.** It is shown below the table when the protocol has step groups. It has one row
+per group, in protocol order:
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Group | `groups[].title` | With the group's action id |
+| Patients | `patientCount` | Patients with at least one instance |
+| Instances | `instanceCount` | Each time the group opened, such as each visit. Also shown per patient. |
+| Completed | `completedInstanceCount` | Every step in it so far done, nested groups' steps included, or recorded complete |
+| Rate | `completionRate` | Bar; 0–1 from the API, shown ×100 |
+
 ---
 
 ## 4. Patient List
@@ -365,16 +384,29 @@ repeats, such as one visit per day, has one instance per cycle. Each instance sh
 - Picking another protocol goes back to the latest instances.
 - An API without `instances[]` on step rows still works: the steps then merge every cycle, as before.
 
+- A link can open the page at a visit: `?visit=groupActionId:groupInstanceId,…`. The Deviations page
+  uses it.
+
+An instance is named by its number and the day it opened, such as `#2 · Nov 3, 2026`. A group that
+opened once shows only the day.
+
 An open group reads **In progress** rather than Pending. A group that never opened is
 **Not started**, and follows the visibility rules above like an untriggered step. The protocol's
-`x/y steps` count and its deviation count still cover every cycle, and leave groups out.
+`x/y steps` count and its deviation count still cover every cycle, and leave groups out. When a
+group has more than one instance, the header says so: `3/3 steps · all visits`.
+
+**Which visit.** Other parts of the page name the visit a step instance is in, from its `groupPath`,
+such as `Outpatient Visit #2 (Sep 6, 2026) › Clinical Consultation`:
+- Each card in **Deviations** says "In …" for a step in a group. When that visit isn't the one shown,
+  **Show this visit** shows it. Otherwise the card says "shown above".
+- The **Step Details** table has a **Visit** column.
 
 Example: a patient with two visits. The first visit is done. The second has history recorded but not
 BP. Visit #2 is shown, as the latest:
 
 ```
 ● Visit                       [In progress] [Step group]
-  [#1 Completed · 2/2 steps · Opened Nov 2, 2026] ((#2 In progress · 1/2 steps · Opened Nov 3, 2026))
+  [#1 · Nov 2, 2026 · Completed · 2/2 steps] ((#2 · Nov 3, 2026 · In progress · 1/2 steps))
   ● History                   [Completed]
   ● Blood Pressure            [Pending]
 ```
@@ -453,6 +485,10 @@ never for an optional step) shows no timeliness badge. 1.x's `EARLY` has no 2.0.
 │         │  └───────────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Step groups:** the Deviation List has a **Visit** column, such as `Outpatient Visit #2
+> (Sep 6, 2026)`, for a step in a step group, and `—` otherwise. The patient link opens the patient at
+> that visit.
 
 ---
 

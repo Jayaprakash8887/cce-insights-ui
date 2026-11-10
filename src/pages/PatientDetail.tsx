@@ -11,7 +11,9 @@ import { formatPercentage } from '../utils/formatters';
 import { STATUS_COLORS, STATE_COLORS } from '../utils/colors';
 import type { ProtocolInstanceStatus, JourneyStep, GroupInstance, StepDisplayStatus } from '../api/types';
 import { groupInstanceLabel, isUntriggered, stepDisplayStatus, stepsOnly } from '../utils/stepStatus';
-import { showCycles, type CycleSelection } from '../utils/groupCycles';
+import {
+  groupInstanceName, groupPathLabel, selectionFor, selectionFromParam, showCycles, type CycleSelection,
+} from '../utils/groupCycles';
 
 // PENDING is a UI-only state: the step exists but its event has not arrived and no deadline has
 // been breached. The API reports it as NOT_STARTED, the same as an action with no step yet, and only
@@ -60,13 +62,13 @@ function GroupInstanceList({ instances, shownInstanceId, onShow }: {
       {instances.map((instance, position) => {
         const status = GROUP_INSTANCE_STATUS[instance.status] ?? GROUP_INSTANCE_STATUS.NOT_STARTED;
         const colors = JOURNEY_STATUS[status.style];
-        const label = groupInstanceLabel(position, instances.length);
+        // Named by number and the day it opened, such as "#2 · Sep 6, 2026".
+        const number = groupInstanceLabel(position, instances.length) ? position + 1 : null;
         const content = (
           <>
-            {label && <span className="font-semibold">{label}</span>}
-            <span>{status.label}</span>
+            <span className="font-semibold">{groupInstanceName(number, instance.openedAt)}</span>
+            <span>· {status.label}</span>
             <span className="text-gray-500">· {instance.completedSteps}/{instance.totalSteps} steps</span>
-            <span className="text-gray-500">· Opened {formatDate(instance.openedAt)}</span>
           </>
         );
         const chip = `inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs ${colors.bg} ${colors.text}`;
@@ -183,7 +185,8 @@ export default function PatientDetail() {
   const [hasSetDefaultSelection, setHasSetDefaultSelection] = useState(false);
   const [protocolSearch, setProtocolSearch] = useState('');
   // The cycle of each step group whose steps are shown. A group with none picked shows its latest.
-  const [cycleSelection, setCycleSelection] = useState<CycleSelection>({});
+  // A link can open the page at a visit, with ?visit=groupActionId:groupInstanceId,…
+  const [cycleSelection, setCycleSelection] = useState<CycleSelection>(() => selectionFromParam(searchParams.get('visit')));
 
   // The Protocols panel sticks just below the patient title block, whose
   // height isn't fixed (it wraps, resizes with the viewport, etc.) — measure
@@ -420,6 +423,7 @@ export default function PatientDetail() {
               const hasReferralEvents = protoOutbound.length > 0 || protoInbound.length > 0;
               // One cycle of each step group at a time: the picked one, else the latest.
               const cycleView = showCycles(journeySteps, cycleSelection);
+              const coversSeveralVisits = journeySteps.some((s) => (s.groupInstances?.length ?? 0) > 1);
 
               // The actions to mark with a deviation: the step that is late or missed, and the
               // prerequisites an out-of-order step skipped. Only deviations of step instances in the
@@ -478,7 +482,11 @@ export default function PatientDetail() {
                           {protoDeviations.length} deviation{protoDeviations.length > 1 ? 's' : ''}
                         </span>
                       )}
-                      <span className="text-xs text-gray-500">{completedCount}/{countedSteps.length} steps</span>
+                      <span className="text-xs text-gray-500">
+                        {completedCount}/{countedSteps.length} steps
+                        {/* The journey shows one visit at a time; these counts cover them all. */}
+                        {coversSeveralVisits && <> · all visits</>}
+                      </span>
                       <span className="text-xs font-medium text-gray-700">{formatPercentage(proto.complianceRate)}</span>
                     </div>
                   </div>
@@ -628,15 +636,35 @@ export default function PatientDetail() {
                           <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Deviations</h4>
                           {protoDeviations.length > 0 ? (
                             <div className="space-y-2">
-                              {protoDeviations.map((d) => (
-                                <div key={`dev-${d.deviationId}`} className="rounded-lg border border-gray-200 p-3">
-                                  <span className={`text-xs font-bold ${d.deviationType === 'OVERDUE' ? 'text-amber-600' : d.deviationType === 'ORDER_VIOLATION' ? 'text-purple-600' : 'text-red-600'}`}>
-                                    {d.deviationType === 'OVERDUE' ? '⚠' : d.deviationType === 'ORDER_VIOLATION' ? '🔀' : '🔴'} {d.deviationType}
-                                  </span>
-                                  <p className="mt-1 text-sm font-medium text-gray-900">{d.description || d.stepName || d.actionId || 'Unknown Step'}</p>
-                                  <p className="text-xs text-gray-500">Detected: {formatDate(d.detectedAt)}</p>
-                                </div>
-                              ))}
+                              {protoDeviations.map((d) => {
+                                const visit = groupPathLabel(d.groupPath);
+                                const shown = cycleView.isShown(d.stepInstanceId);
+                                return (
+                                  <div key={`dev-${d.deviationId}`} className="rounded-lg border border-gray-200 p-3">
+                                    <span className={`text-xs font-bold ${d.deviationType === 'OVERDUE' ? 'text-amber-600' : d.deviationType === 'ORDER_VIOLATION' ? 'text-purple-600' : 'text-red-600'}`}>
+                                      {d.deviationType === 'OVERDUE' ? '⚠' : d.deviationType === 'ORDER_VIOLATION' ? '🔀' : '🔴'} {d.deviationType}
+                                    </span>
+                                    <p className="mt-1 text-sm font-medium text-gray-900">{d.description || d.stepName || d.actionId || 'Unknown Step'}</p>
+                                    {visit && (
+                                      <p className="text-xs text-gray-600">
+                                        In {visit}
+                                        {shown ? (
+                                          <span className="ml-1 text-gray-400">· shown above</span>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => setCycleSelection((current) => ({ ...current, ...selectionFor(d.groupPath) }))}
+                                            className="ml-1 text-blue-600 hover:text-blue-700 hover:underline"
+                                          >
+                                            · Show this visit
+                                          </button>
+                                        )}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-gray-500">Detected: {formatDate(d.detectedAt)}</p>
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : (
                             <p className="py-3 text-center text-xs text-gray-400">No deviations found.</p>
@@ -658,6 +686,9 @@ export default function PatientDetail() {
                                     </span>
                                   </div>
                                   <p className="mt-1 text-sm font-medium text-gray-900">{d.description || d.stepName || d.actionId || 'Unknown Step'}</p>
+                                  {groupPathLabel(d.groupPath) && (
+                                    <p className="text-xs text-gray-600">In {groupPathLabel(d.groupPath)}</p>
+                                  )}
                                   <p className="text-xs text-gray-500">Detected: {formatDate(d.detectedAt)}</p>
                                 </div>
                               ))}
@@ -710,6 +741,7 @@ export default function PatientDetail() {
                             <thead>
                               <tr className="border-b border-gray-200 text-left text-xs font-medium uppercase text-gray-500">
                                 <th className="pb-2 pr-4">Action</th>
+                                <th className="pb-2 pr-4">Visit</th>
                                 <th className="pb-2 pr-4">State</th>
                                 <th className="pb-2 pr-4">Due Date</th>
                                 <th className="pb-2 pr-4">Completed</th>
@@ -720,6 +752,7 @@ export default function PatientDetail() {
                               {detail.data.steps.map((s) => (
                                 <tr key={s.stepInstanceId} className="hover:bg-gray-50">
                                   <td className="py-2 pr-4 font-medium text-gray-900">{s.actionId}</td>
+                                  <td className="py-2 pr-4 text-gray-600">{groupPathLabel(s.groupPath) || '—'}</td>
                                   <td className="py-2 pr-4">
                                     <StatusBadge label={stepDisplayStatus(s)} color={STATE_COLORS[stepDisplayStatus(s)]} />
                                   </td>

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import type { JourneyStep } from '../api/types';
+import type { JourneyStep, PatientDeviation } from '../api/types';
 import PatientDetail from './PatientDetail';
 
 // A visit is a step group: a set of steps that belong together. This patient had two visits. The
@@ -35,6 +35,7 @@ const journey: JourneyStep[] = [
 ];
 
 const none = { data: undefined, isLoading: false, error: null };
+const deviations: PatientDeviation[] = [];
 
 vi.mock('../hooks/usePatients', () => ({
   usePatientTimeline: () => ({
@@ -54,7 +55,7 @@ vi.mock('../hooks/usePatients', () => ({
   }),
   usePatientProtocolTracking: () => ({ data: [], isLoading: false, error: null }),
   usePatientProtocolTrackingDetail: () => none,
-  usePatientDeviations: () => ({ data: [], isLoading: false, error: null }),
+  usePatientDeviations: () => ({ data: deviations, isLoading: false, error: null }),
   usePatientIntelligenceDeliveries: () => ({ data: [], isLoading: false, error: null }),
 }));
 vi.mock('../hooks/useProtocols', () => ({ useActionOrder: () => none }));
@@ -84,17 +85,19 @@ describe('PatientDetail — step groups in the Protocol Journey', () => {
     renderPage();
     const visitRow = screen.getByText('Visit').parentElement!.parentElement!;
     expect(within(visitRow).getByText('Step group')).toBeInTheDocument();
-    expect(within(visitRow).getByText('#1')).toBeInTheDocument();
-    expect(within(visitRow).getByText('#2')).toBeInTheDocument();
+    // Each is named by its number and the day it opened.
+    expect(within(visitRow).getByText('#1 · Nov 2, 2026')).toBeInTheDocument();
+    expect(within(visitRow).getByText('#2 · Nov 3, 2026')).toBeInTheDocument();
     expect(within(visitRow).getByText('· 2/2 steps')).toBeInTheDocument();
     expect(within(visitRow).getByText('· 1/2 steps')).toBeInTheDocument();
     // The row shows the latest visit, which is open, and so does its chip.
-    expect(within(visitRow).getAllByText('In progress')).toHaveLength(2);
+    expect(within(visitRow).getByText('In progress')).toBeInTheDocument();
+    expect(within(visitRow).getByText('· In progress')).toBeInTheDocument();
   });
 
   it('shows the latest visit\'s steps first, and another visit\'s steps when its chip is picked', () => {
     renderPage();
-    const chip = (label: string) => screen.getByText(label).closest('button')!;
+    const chip = (label: string) => screen.getByText(new RegExp(`^${label} ·`)).closest('button')!;
     const bpRow = () => screen.getByText('Blood Pressure').parentElement!.parentElement!;
 
     // Visit #2: history done by Dr. Second, blood pressure still awaited.
@@ -112,10 +115,31 @@ describe('PatientDetail — step groups in the Protocol Journey', () => {
     expect(within(bpRow()).getByText('ON TIME')).toBeInTheDocument();
   });
 
-  it('counts steps only, not the group, in the protocol header', () => {
+  it('counts steps only, not the group, in the protocol header, and says the count covers all visits', () => {
     renderPage();
     // registration, history and bp are steps. The visit is not.
     expect(screen.getAllByText('3/3 steps').length).toBeGreaterThan(0);
     expect(screen.queryByText('4/4 steps')).not.toBeInTheDocument();
+    expect(screen.getByText(/3\/3 steps\s*· all visits/)).toBeInTheDocument();
+  });
+
+  it('says which visit a deviation is in, and shows that visit when asked', () => {
+    deviations.push({
+      deviationId: 'd1', protocolInstanceId: 'pi-1', protocolCanonical: 'http://x/PlanDefinition/visits|1.0',
+      stepInstanceId: 'b0', actionId: 'bp', stepName: 'Blood Pressure', deviationType: 'OVERDUE',
+      detectedAt: '2026-11-03T09:00:00Z', description: 'Blood Pressure was late',
+      groupPath: [{ groupActionId: 'visit', groupName: 'Visit', groupInstanceId: 'g0', number: 1, openedAt: '2026-11-02T09:00:00Z' }],
+    });
+    renderPage();
+    // The Deviations panel's card; demo-dev also lists each deviation under Intelligence Alerts.
+    const card = screen.getAllByText('Blood Pressure was late')[0].parentElement!;
+    expect(within(card).getByText(/In Visit #1 \(Nov 2, 2026\)/)).toBeInTheDocument();
+
+    // Visit #2 is shown; the deviation is in visit #1.
+    fireEvent.click(within(card).getByText('· Show this visit'));
+
+    expect(screen.getByText(/^#1 ·/).closest('button')).toHaveAttribute('aria-pressed', 'true');
+    expect(within(card).getByText('· shown above')).toBeInTheDocument();
+    deviations.length = 0;
   });
 });
