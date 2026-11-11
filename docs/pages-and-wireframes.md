@@ -253,12 +253,20 @@ Example, the Rwanda outpatient protocol:
     ● Patient Visit                  100%  140/140 times · 97/97 patients
     ● Vitals Recording                20%  30/150 times · 21/105 patients
     ○ Clinical Consultation  step group · 120 opened for 83 patients · 75% completed (90/120)
-        STEPS (2)
-        ● Consultation               83%  100/120 times · 73/83 patients
-        ● Laboratory Order          100%  40/40 times · 31/31 patients
+        STEPS (7)
+        ● Clinical Consultation       83%  100/120 times · 73/83 patients
+        ● Chief Complaints           100%  60/60 times · 43/43 patients
+        ● History of Present Illness 100%  12/12 times · 9/9 patients
+        ● Laboratory Order           100%  40/40 times · 31/31 patients
             SUB-ACTIONS (1)
-            ● Laboratory Results     56%  14/25 times · 12/20 patients
+            ● Laboratory Results      56%  14/25 times · 12/20 patients
+        ● Clinical Diagnosis          32%  38/118 times · 27/82 patients
+        ● Treatment Prescription     100%  30/30 times · 23/23 patients
+        ● Referral                   100%  18/18 times · 15/15 patients
 ```
+
+A step with no step instances in the range is left out, as Laboratory Results would be until one is
+recorded.
 
 ---
 

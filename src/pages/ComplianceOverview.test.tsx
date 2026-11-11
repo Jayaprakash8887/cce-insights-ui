@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import ComplianceOverview from './ComplianceOverview';
 
 // The Rwanda outpatient protocol: a visit group with a consultation group inside it, and lab results
-// under lab order. Registration sits outside every group. Each step in a group is counted per time it
+// under lab order. Registration sits outside every group. Patient counts are UAT's. Each step in a group is counted per time it
 // was expected (its step instances) as well as per patient.
 const metric = (actionId: string, patients: number, done: number, times?: number, timesDone?: number) => ({
   actionId, totalInstances: patients, completedCount: done, completionRate: done / patients,
@@ -23,8 +23,13 @@ vi.mock('../hooks/useProtocols', () => ({
         metric('visit-encounter', 97, 97, 140, 140),
         metric('vitals-recording', 105, 21, 150, 30),
         metric('consultation', 83, 73, 120, 100),
+        metric('chief-complaints', 43, 43, 60, 60),
+        metric('history-assessment', 9, 9, 12, 12),
         metric('lab-order', 31, 31, 40, 40),
         metric('lab-results', 20, 12, 25, 14),
+        metric('diagnosis', 82, 27, 118, 38),
+        metric('treatment', 23, 23, 30, 30),
+        metric('referral', 15, 15, 18, 18),
       ],
       groups: [
         { groupActionId: 'outpatient-visit', title: 'Outpatient Visit', patientCount: 105, instanceCount: 150, completedInstanceCount: 60, completionRate: 0.4 },
@@ -40,9 +45,14 @@ vi.mock('../hooks/useProtocols', () => ({
       { actionId: 'visit-encounter', parentActionId: 'outpatient-visit', type: null, title: 'Patient Visit' },
       { actionId: 'vitals-recording', parentActionId: 'outpatient-visit', type: null, title: 'Vitals Recording' },
       { actionId: 'clinical-consultation', parentActionId: 'outpatient-visit', type: null, title: 'Clinical Consultation', group: true },
-      { actionId: 'consultation', parentActionId: 'clinical-consultation', type: null, title: 'Consultation' },
+      { actionId: 'consultation', parentActionId: 'clinical-consultation', type: null, title: 'Clinical Consultation' },
+      { actionId: 'chief-complaints', parentActionId: 'clinical-consultation', type: null, title: 'Chief Complaints' },
+      { actionId: 'history-assessment', parentActionId: 'clinical-consultation', type: null, title: 'History of Present Illness' },
       { actionId: 'lab-order', parentActionId: 'clinical-consultation', type: null, title: 'Laboratory Order' },
       { actionId: 'lab-results', parentActionId: 'lab-order', type: null, title: 'Laboratory Results' },
+      { actionId: 'diagnosis', parentActionId: 'clinical-consultation', type: null, title: 'Clinical Diagnosis' },
+      { actionId: 'treatment', parentActionId: 'clinical-consultation', type: null, title: 'Treatment Prescription' },
+      { actionId: 'referral', parentActionId: 'clinical-consultation', type: null, title: 'Referral' },
     ],
     isLoading: false, error: null,
   }),
@@ -79,6 +89,14 @@ describe('ComplianceOverview — Service Workflow Compliance with step groups', 
     const consultation = within(visit).getByTestId('workflow-clinical-consultation');
     const labOrder = within(consultation).getByTestId('workflow-lab-order');
     expect(within(labOrder).getByTestId('workflow-lab-results')).toBeInTheDocument();
+    // Every step of the consultation group, in protocol order, inside it.
+    expect(consultation).toHaveTextContent('Steps (7)');
+    const steps = within(consultation).getAllByTestId(/^workflow-/)
+      .filter((el) => el.parentElement?.closest('[data-testid^="workflow-"]') === consultation)
+      .map((el) => el.dataset.testid?.replace('workflow-', ''));
+    expect(steps).toEqual(['consultation', 'chief-complaints', 'history-assessment', 'lab-order', 'diagnosis',
+      'treatment', 'referral']);
+    expect(within(consultation).getByTestId('workflow-diagnosis')).toHaveTextContent('38/118 times · 27/82 patients');
     // Not a second top-level card beside the visit.
     expect(screen.getAllByTestId(/^workflow-/).filter((el) => el.parentElement?.closest('[data-testid^="workflow-"]') === null)
       .map((el) => el.dataset.testid)).toEqual(['workflow-registration', 'workflow-outpatient-visit']);
