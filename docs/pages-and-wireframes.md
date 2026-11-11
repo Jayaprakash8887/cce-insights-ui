@@ -221,14 +221,52 @@ Notes:
 | Select facility from dropdown | Re-scope the summary + workflow timeline to that facility. **RI-48:** when facilities share a name, the option shows `Name (id)` to disambiguate (same logic as the Facility Ranking table). |
 | Expand a workflow step | Reveal its sub-actions in the timeline |
 
-> **RI-50 — Service Workflow Compliance tree** (`buildWorkflowTree`): top-level steps are shown with
-> their data-bearing sub-actions nested. If a cohort's **only** activity is a sub-action whose parent
-> step has no data (e.g. a referral-only journey — the patient completed a `referral` sub-action but
-> no `consultation` step), the parent is **synthesized as a grouping container** ("sub-actions only",
-> no bar of its own) so the sub-action is still visible — previously the whole section rendered blank.
->
-> A **step group**, such as a visit, never has data of its own. It always shows as such a container,
-> labelled "step group" (`group: true` in the action order).
+> **RI-50 — Service Workflow Compliance tree** (`buildWorkflowTree`): actions are nested as the
+> protocol nests them, to any depth: top-level steps with their data-bearing sub-actions, and a step
+> under a sub-action under it (e.g. lab results under lab order). If a cohort's **only** activity is a
+> sub-action whose parent step has no data (e.g. a referral-only journey — the patient completed a
+> `referral` sub-action but no `consultation` step), the parent is **synthesized as a grouping
+> container** ("sub-actions only", no bar of its own) so the sub-action is still visible — previously
+> the whole section rendered blank. Every level above a step with data is synthesized the same way.
+
+**Step groups in the Service Workflow Compliance tree.** A step group, such as a visit, has no step
+data of its own. It is always a container (`group: true` in the action order):
+- A group inside a group, such as a consultation inside a visit, is nested inside it. It is not shown
+  as a second card beside it.
+- Its children are listed as **Steps (n)**. A step's children are **Sub-actions (n)**.
+- Its header shows its own figures from step analytics `groups[]`: how often it opened, for how many
+  patients, and how many of those had every step so far done. For example: `step group · 150 opened
+  for 105 patients · 40% completed (60/150)`. Against an API without `groups[]`, it shows only
+  "step group".
+- A step inside a group, at any depth, can repeat once per visit. So it is measured per time it was
+  expected (`completedStepInstanceCount / stepInstanceCount`), with its patients alongside:
+  `30/150 times · 21/105 patients`. A step outside every group is measured per patient:
+  `50/50 patients`. Every count shows its unit.
+
+Example, the Rwanda outpatient protocol:
+
+```
+● Registration                                   100%
+    50 of 50 patients completed
+● Outpatient Visit   step group · 150 opened for 105 patients · 40% completed (60/150)
+    STEPS (3)
+    ● Patient Visit                  100%  140/140 times · 97/97 patients
+    ● Vitals Recording                20%  30/150 times · 21/105 patients
+    ○ Clinical Consultation  step group · 120 opened for 83 patients · 75% completed (90/120)
+        STEPS (7)
+        ● Clinical Consultation       83%  100/120 times · 73/83 patients
+        ● Chief Complaints           100%  60/60 times · 43/43 patients
+        ● History of Present Illness 100%  12/12 times · 9/9 patients
+        ● Laboratory Order           100%  40/40 times · 31/31 patients
+            SUB-ACTIONS (1)
+            ● Laboratory Results      56%  14/25 times · 12/20 patients
+        ● Clinical Diagnosis          32%  38/118 times · 27/82 patients
+        ● Treatment Prescription     100%  30/30 times · 23/23 patients
+        ● Referral                   100%  18/18 times · 15/15 patients
+```
+
+A step with no step instances in the range is left out, as Laboratory Results would be until one is
+recorded.
 
 ---
 
