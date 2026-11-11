@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildWorkflowTree } from './serviceWorkflow';
+import { buildWorkflowTree, isInAGroup } from './serviceWorkflow';
 
 const ORDER = [
   { actionId: 'visit-encounter', parentActionId: null },
@@ -70,5 +70,64 @@ describe('buildWorkflowTree', () => {
 
   it('returns empty for no data', () => {
     expect(buildWorkflowTree([], ORDER)).toEqual([]);
+  });
+});
+
+// The Rwanda outpatient protocol: a visit group, with a consultation group inside it, and lab
+// results under lab order, a step.
+const GROUPED = [
+  { actionId: 'outpatient-visit', parentActionId: null, group: true },
+  { actionId: 'visit-encounter', parentActionId: 'outpatient-visit' },
+  { actionId: 'vitals-recording', parentActionId: 'outpatient-visit' },
+  { actionId: 'clinical-consultation', parentActionId: 'outpatient-visit', group: true },
+  { actionId: 'consultation', parentActionId: 'clinical-consultation' },
+  { actionId: 'lab-order', parentActionId: 'clinical-consultation' },
+  { actionId: 'lab-results', parentActionId: 'lab-order' },
+  { actionId: 'diagnosis', parentActionId: 'clinical-consultation' },
+  { actionId: 'registration', parentActionId: null },
+];
+
+describe('buildWorkflowTree with step groups', () => {
+  const tree = buildWorkflowTree(
+    [step('visit-encounter', 97, 97), step('vitals-recording', 105, 21), step('consultation', 83, 73),
+      step('lab-order', 31, 31), step('lab-results', 20, 12), step('diagnosis', 82, 27)],
+    GROUPED,
+  );
+
+  it('nests a group inside the group around it, not beside it', () => {
+    expect(tree.map((n) => n.actionId)).toEqual(['outpatient-visit']);
+    const visit = tree[0];
+    expect(visit.group).toBe(true);
+    expect(visit.synthetic).toBe(true);
+    expect(visit.children.map((c) => c.actionId)).toEqual(['visit-encounter', 'vitals-recording', 'clinical-consultation']);
+    const consultationGroup = visit.children[2];
+    expect(consultationGroup.group).toBe(true);
+    expect(consultationGroup.children.map((c) => c.actionId)).toEqual(['consultation', 'lab-order', 'diagnosis']);
+  });
+
+  it('shows a step under a step, at any depth', () => {
+    const labOrder = tree[0].children[2].children[1];
+    expect(labOrder.synthetic).toBe(false);
+    expect(labOrder.step?.completedCount).toBe(31);
+    expect(labOrder.children.map((c) => c.actionId)).toEqual(['lab-results']);
+    expect(labOrder.children[0].step?.totalInstances).toBe(20);
+  });
+
+  it('synthesizes every level above a step with data, and nothing else', () => {
+    const only = buildWorkflowTree([step('lab-results', 3, 1)], GROUPED);
+    expect(only.map((n) => n.actionId)).toEqual(['outpatient-visit']);
+    const consultationGroup = only[0].children[0];
+    expect(consultationGroup.actionId).toBe('clinical-consultation');
+    expect(consultationGroup.children.map((c) => c.actionId)).toEqual(['lab-order']);
+    expect(consultationGroup.children[0].synthetic).toBe(true);   // lab-order has no data: a container
+    expect(consultationGroup.children[0].group).toBe(false);
+  });
+
+  it('knows which actions sit inside a step group, at any depth', () => {
+    expect(isInAGroup('vitals-recording', GROUPED)).toBe(true);
+    expect(isInAGroup('lab-results', GROUPED)).toBe(true);
+    expect(isInAGroup('clinical-consultation', GROUPED)).toBe(true);
+    expect(isInAGroup('outpatient-visit', GROUPED)).toBe(false);
+    expect(isInAGroup('registration', GROUPED)).toBe(false);
   });
 });

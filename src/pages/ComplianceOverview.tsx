@@ -9,15 +9,77 @@ import { useProtocolComplianceSummary } from '../hooks/useComplianceSummary';
 import { useStepAnalytics, useActionOrder } from '../hooks/useProtocols';
 import { useProtocols } from '../hooks/useLookups';
 import { formatNumber, formatPercentage } from '../utils/formatters';
-import { buildWorkflowTree } from '../utils/serviceWorkflow';
+import { buildWorkflowTree, isInAGroup, type WorkflowNode } from '../utils/serviceWorkflow';
+import type { ActionOrderEntry, StepAnalytics } from '../api/types';
 
-/* Collapsible sub-actions panel for the Service Workflow Compliance timeline */
-function SubActionsPanel({
-  children,
-  titleMap,
+type StepRow = StepAnalytics['steps'][number];
+type GroupMetric = NonNullable<StepAnalytics['groups']>[number];
+
+/** Everything the workflow tree needs to label and measure a node. */
+interface WorkflowContext {
+  labelOf: (actionId: string) => string;
+  order: ActionOrderEntry[];
+  groupMetrics: Map<string, GroupMetric>;
+}
+
+const rateColors = (pct: number) => ({
+  bar: pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400',
+  text: pct >= 80 ? 'text-green-700' : pct >= 50 ? 'text-amber-700' : 'text-red-700',
+});
+
+/**
+ * How a step is measured, with its unit. A step in a step group can repeat, once per visit, so it is
+ * measured per time it was expected (its step instances), with its patients alongside. Any other
+ * step is measured per patient. Against an API without step-instance counts, every step is measured
+ * per patient.
+ */
+function measureOf(step: StepRow, inGroup: boolean) {
+  if (inGroup && step.stepInstanceCount != null) {
+    const total = step.stepInstanceCount;
+    const done = step.completedStepInstanceCount ?? 0;
+    return {
+      done, total, unit: 'times',
+      pct: total > 0 ? Math.round((done / total) * 100) : 0,
+      alongside: `${formatNumber(step.completedCount)}/${formatNumber(step.totalInstances)} patients`,
+    };
+  }
+  const total = step.totalInstances;
+  return {
+    done: step.completedCount, total, unit: 'patients',
+    pct: total > 0 ? Math.round((step.completedCount / total) * 100) : 0,
+    alongside: null as string | null,
+  };
+}
+
+/** A step group's own figures: how often it opened, for how many patients, and how often it was completed. */
+function GroupSummary({ metric }: { metric: GroupMetric | undefined }) {
+  if (!metric) return <span className="text-[11px] font-medium text-gray-400">step group</span>;
+  const pct = Math.round(metric.completionRate * 100);
+  return (
+    <span
+      className="text-[11px] text-gray-500"
+      title="Each time the group opened for a patient, such as each visit, and how many of those had every step so far done."
+    >
+      <span className="font-medium text-indigo-700">step group</span>
+      {' · '}{formatNumber(metric.instanceCount)} opened for {formatNumber(metric.patientCount)} patients
+      {' · '}<span className={`font-bold ${rateColors(pct).text}`}>{pct}%</span> completed
+      {' '}({formatNumber(metric.completedInstanceCount)}/{formatNumber(metric.instanceCount)})
+    </span>
+  );
+}
+
+/**
+ * The children of a workflow node, collapsible, nested to any depth: a step's sub-actions, or a step
+ * group's steps and the groups inside it.
+ */
+function WorkflowChildren({
+  nodes,
+  title,
+  context,
 }: {
-  children: { actionId: string; totalInstances: number; completedCount: number }[];
-  titleMap: Map<string, string | null>;
+  nodes: WorkflowNode<StepRow>[];
+  title: string;
+  context: WorkflowContext;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -38,36 +100,58 @@ function SubActionsPanel({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-          Sub-actions ({children.length})
+          {title} ({nodes.length})
         </span>
       </button>
       {open && (
         <div className="relative ml-2 mt-2">
-          {/* Sub-action connector line */}
+          {/* Child connector line */}
           <div className="absolute left-[5px] top-2 bottom-2 w-px bg-gray-200" />
-          {children.map((child) => {
-            const childDenom = child.totalInstances;
-            const childPct = childDenom > 0 ? Math.round((child.completedCount / childDenom) * 100) : 0;
-            const childLabel = titleMap.get(child.actionId) || child.actionId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-            const childBarColor = childPct >= 80 ? 'bg-green-500' : childPct >= 50 ? 'bg-amber-500' : 'bg-red-400';
-            const childDotColor = childPct >= 80 ? 'bg-green-500' : childPct >= 50 ? 'bg-amber-500' : 'bg-red-400';
-            const childPctColor = childPct >= 80 ? 'text-green-700' : childPct >= 50 ? 'text-amber-700' : 'text-red-700';
+          {nodes.map((child) => {
+            const label = context.labelOf(child.actionId);
+            const nested = child.children.length > 0 && (
+              <WorkflowChildren nodes={child.children} title={child.group ? 'Steps' : 'Sub-actions'} context={context} />
+            );
 
+            if (child.synthetic) {
+              // A container with no data of its own: a step group, or a step known only by its sub-actions.
+              return (
+                <div key={child.actionId} className="relative py-1.5 pl-5" data-testid={`workflow-${child.actionId}`}>
+                  <div className="absolute left-[2px] top-[10px] h-[8px] w-[8px] rounded-full bg-gray-300 ring-2 ring-white" />
+                  <div className="rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-semibold text-gray-800">{label}</p>
+                      {child.group
+                        ? <GroupSummary metric={context.groupMetrics.get(child.actionId)} />
+                        : <span className="text-[11px] font-medium text-gray-400">sub-actions only</span>}
+                    </div>
+                    {nested}
+                  </div>
+                </div>
+              );
+            }
+
+            const measure = measureOf(child.step!, isInAGroup(child.actionId, context.order));
+            const colors = rateColors(measure.pct);
             return (
-              <div key={child.actionId} className="relative flex items-start gap-3 py-1.5 pl-5">
-                {/* Sub-action dot */}
-                <div className={`absolute left-[2px] top-[10px] h-[8px] w-[8px] rounded-full ${childDotColor} ring-2 ring-white`} />
+              <div key={child.actionId} className="relative py-1.5 pl-5" data-testid={`workflow-${child.actionId}`}>
+                {/* Step dot */}
+                <div className={`absolute left-[2px] top-[10px] h-[8px] w-[8px] rounded-full ${colors.bar} ring-2 ring-white`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-medium text-gray-700">{childLabel}</p>
+                    <p className="text-[11px] font-medium text-gray-700">{label}</p>
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[11px] font-bold ${childPctColor}`}>{childPct}%</span>
-                      <span className="text-[10px] text-gray-400">{child.completedCount}/{childDenom}</span>
+                      <span className={`text-[11px] font-bold ${colors.text}`}>{measure.pct}%</span>
+                      <span className="text-[10px] text-gray-400">
+                        {formatNumber(measure.done)}/{formatNumber(measure.total)} {measure.unit}
+                        {measure.alongside && <> · {measure.alongside}</>}
+                      </span>
                     </div>
                   </div>
                   <div className="mt-0.5 h-1 w-4/5 overflow-hidden rounded-full bg-gray-100">
-                    <div className={`h-full rounded-full ${childBarColor}`} style={{ width: `${childPct}%` }} />
+                    <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${measure.pct}%` }} />
                   </div>
+                  {nested}
                 </div>
               </div>
             );
@@ -239,15 +323,17 @@ export default function ComplianceOverview() {
                 {(() => {
                   const order = actionOrder.data ?? [];
                   const titleMap = new Map(order.map((e) => [e.actionId, e.title]));
-                  // A step group (such as a visit) has no data of its own, so it always shows as a
-                  // container for its steps.
-                  const groupIds = new Set(order.filter((e) => e.group).map((e) => e.actionId));
                   const labelOf = (id: string) =>
                     titleMap.get(id) || id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                  const context: WorkflowContext = {
+                    labelOf,
+                    order,
+                    groupMetrics: new Map((stepAnalytics.data.groups ?? []).map((g) => [g.groupActionId, g])),
+                  };
 
-                  // RI-50: build the tree via the shared helper, which synthesizes a container for a
-                  // parent whose only activity is a data-bearing sub-action (e.g. a referral-only
-                  // journey) so that sub-action is never hidden.
+                  // RI-50: build the tree via the shared helper. It nests each action as the protocol
+                  // does, to any depth, and synthesizes a container for a parent with no data of its
+                  // own: a step group, or a step known only by its sub-actions.
                   const tree = buildWorkflowTree(stepAnalytics.data.steps, order);
 
                   return (
@@ -256,53 +342,56 @@ export default function ComplianceOverview() {
                       <div className="absolute left-[11px] top-6 bottom-6 w-0.5 bg-gray-200" />
 
                       {tree.map((node) => {
-                        const denom = node.totalInstances;
-                        const pct = denom > 0 ? Math.round((node.completedCount / denom) * 100) : 0;
-                        const missing = Math.max(denom - node.completedCount, 0);
                         const label = labelOf(node.actionId);
-                        const barColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
-                        const pctColor = pct >= 80 ? 'text-green-700' : pct >= 50 ? 'text-amber-700' : 'text-red-700';
-                        const dotColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400';
+                        const measure = node.step ? measureOf(node.step, isInAGroup(node.actionId, order)) : null;
+                        const colors = rateColors(measure?.pct ?? 0);
+                        const missing = measure ? Math.max(measure.total - measure.done, 0) : 0;
 
                         return (
-                          <div key={node.actionId} className="relative pl-10 pb-4">
+                          <div key={node.actionId} className="relative pl-10 pb-4" data-testid={`workflow-${node.actionId}`}>
                             {/* Timeline dot - bold & bright (grey for a synthetic grouping) */}
-                            <div className={`absolute left-1.5 top-5 h-4 w-4 rounded-full ${node.synthetic ? 'bg-gray-300' : dotColor} shadow-md z-10 ring-3 ring-white`} />
+                            <div className={`absolute left-1.5 top-5 h-4 w-4 rounded-full ${node.synthetic ? 'bg-gray-300' : colors.bar} shadow-md z-10 ring-3 ring-white`} />
 
                             <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                               {/* Header row */}
-                              <div className="flex items-center justify-between">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
                                 <h5 className="text-sm font-bold text-gray-900">{label}</h5>
-                                {node.synthetic ? (
-                                  <span className="text-[11px] font-medium text-gray-400">
-                                    {groupIds.has(node.actionId) ? 'step group' : 'sub-actions only'}
-                                  </span>
+                                {node.group ? (
+                                  <GroupSummary metric={context.groupMetrics.get(node.actionId)} />
+                                ) : node.synthetic ? (
+                                  <span className="text-[11px] font-medium text-gray-400">sub-actions only</span>
                                 ) : (
-                                  <span className={`text-lg font-bold ${pctColor}`}>{pct}%</span>
+                                  <span className={`text-lg font-bold ${colors.text}`}>{measure!.pct}%</span>
                                 )}
                               </div>
 
                               {/* A synthetic parent has no measurement of its own — show its children only. */}
-                              {!node.synthetic && (
+                              {measure && (
                                 <>
                                   {/* Progress bar */}
                                   <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                    <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                                    <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${measure.pct}%` }} />
                                   </div>
 
                                   {/* Stats */}
                                   <div className="mt-2 flex items-center gap-2 text-xs">
-                                    <span className="text-gray-600">{node.completedCount} of {denom} completed</span>
+                                    <span className="text-gray-600">
+                                      {formatNumber(measure.done)} of {formatNumber(measure.total)} {measure.unit} completed
+                                    </span>
                                     {missing > 0 && (
-                                      <span className="text-red-500 font-medium">· {missing} missing</span>
+                                      <span className="text-red-500 font-medium">· {formatNumber(missing)} missing</span>
                                     )}
                                   </div>
                                 </>
                               )}
 
-                              {/* Collapsible child steps as sub-timeline nodes */}
+                              {/* Collapsible children as sub-timeline nodes, nested to any depth */}
                               {node.children.length > 0 && (
-                                <SubActionsPanel children={node.children} titleMap={titleMap} />
+                                <WorkflowChildren
+                                  nodes={node.children}
+                                  title={node.group ? 'Steps' : 'Sub-actions'}
+                                  context={context}
+                                />
                               )}
                             </div>
                           </div>
